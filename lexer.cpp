@@ -16,9 +16,20 @@ char Lexer::peekPre() {
 
 char Lexer::advance() { return (isAtEnd()) ? '\0' : src[offset++]; }
 
+char Lexer::next() {
+  if(isAtEnd()) return '\0';
+  char c = advance();
+    if (c == '\n') {
+    col = 0;
+    line++;
+    } else col++;
+
+    return c;
+}
+
 bool Lexer::match(char c) {
   if (peek() == c) {
-    advance();
+    next();
     return true;
   }
   return false;
@@ -27,27 +38,27 @@ bool Lexer::match(char c) {
 void Lexer::error(str msg) {
   std::cerr << "main.ru:" << line << ":" << col << ":Lexer Error: " << msg
             << std::endl;
-  exit(0);
+
+    exit(0);
 }
 
 void Lexer::isWhiteSpace() {
   while (!isAtEnd()) {
     if ((peek() == '/' && peekNext() == '/') || peek() == '#') {
       while (peek() != '\n') {
-        advance();
+        next();
       }
     } else if (std::isspace(peek())) {
-      advance();
+      next();
     } else
       break;
   }
 }
 
  Token Lexer::symbolToken(){
-  char c = advance();
+  char c = next();
 
   switch (c) {
-     case '\n': line++;
      case '+': if(match('+')) return {INC, "++", line, col}; else return {PLUS, "+", line, col};
      case '-': if(match('-')) return {DEC, "--", line, col}; else return {MINUS, "-", line, col};
      case '*': return {STAR, "*", line, col};
@@ -63,28 +74,41 @@ void Lexer::isWhiteSpace() {
      case ']': return {RB, "]", line, col};
      case '=': if(match('=')) return {EQEQ, "==", line, col}; else return {EQ, "=", line, col};
      case '>': if(match('=')) return {BQ, ">=", line, col};   else return {BGT, ">", line, col};
-     case '<': if(match('=')) return {LQ, "<=", line, col};   else return {LST, ">", line, col};
-     case '|': if(match('|')) return {OR, "||", line, col};
+     case '<': if(match('=')) return {LQ, "<=", line, col};   else return {LST, "<", line, col};
+     case '|': if(match('|')) return {OR, "||", line, col};   else break;
      case '&': if(match('&')) return {AND, "&&", line, col};  else return {ADDR, "&", line, col};
      case '!': return {NOT, "!", line, col};
      case '"': return string();   
-     default: return {INVALID ,"", line, col};   
   }
+  return {INVALID ,"", line, col};
 }
 
 
 Token Lexer::string() {
   str string;
   while (peek() != '"' && !isAtEnd()) {
-    if (peek() == '\n')
-      line++;
-    string += advance();
+    
+    if (next() == '\\') {
+     switch (next()) {
+     case 'n': string += '\n'; break;
+     case 't':  string += '\t'; break;
+     case 'r':  string += '\r'; break;
+     case '\\':  string += '\\'; break;
+     case 'b':  string += '\b'; break;
+     case 'f': string += '\f'; break;
+     case '"': string += '"'; break;
+     default:
+      string += '\\'; 
+      string += next(); 
+     error("unknown escape sequence \\" + string);
+     }
+    } else   string += next();
   }
 
   if (isAtEnd()) {
     error("Unterminated string.\n");
   }
-  advance();
+  next();
 
   return {STRLIT, string, line, col};
 }
@@ -113,14 +137,14 @@ Token Lexer::setKeyword(str iden) {
 
 Token Lexer::ID() {
   str iden;
-  if(std::isdigit(peekPre())){
+  if(std::isdigit(peek())){
     error("cannot start an identifier with a number\n");
-    return {INVALID};
-  }
-  if (std::isalpha(peek())) {
+    }
+    if (std::isalpha(peek())) {
     while (isalnum(peek())) {
-      iden += advance();
-    } 
+      iden += next();
+    }
+    
   }
   return setKeyword(iden);
 }
@@ -128,7 +152,7 @@ Token Lexer::ID() {
 Token Lexer::Number() {
   str num;
   while (std::isdigit(peek())) {
-    num += advance();
+    num += next();
   }
   return {NUMLIT, num, line, col};
 }
@@ -142,12 +166,6 @@ std::vector<Token> Lexer::tokenize(str &source) {
       tokens.push_back({EoF, "", line, col});
       break;
     }
-
-    // if (peek() == '\n') {
-    // col}= 0;
-    // line++;
-    // } else col}+;
-
     isWhiteSpace();
     if (std::isalpha(peek())) {
       tokens.push_back(ID());
