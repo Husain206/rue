@@ -1,0 +1,104 @@
+#pragma once
+
+#include <iostream>
+#include <string>
+#include <vector>
+
+typedef std::string str;
+typedef size_t usize;
+
+typedef enum {
+
+  // keywords
+  ALA,
+  FOR,
+  IF,
+  ELSE,
+  PRINT,
+  SET,
+  FN,
+  RETURN,
+  NALL,
+
+  // IDent
+  IDENT,
+  NUMLIT,
+  STRLIT,
+  VAR,
+
+  // binary op
+  PLUS,
+  MINUS,
+  STAR,
+  SLASH,
+  EQ,
+
+  // symbols
+  RCB,
+  LCB, // { }
+  RPRN,
+  LPRN, // ( )
+  RB,
+  LB, // []
+  SEMIC,
+  COMMA,
+  DOT,
+  DQ,
+  SQ,
+
+  // comparsion
+  EQEQ,
+  LQ,
+  BQ,
+  LST,
+  BGT,
+
+  // logical operators
+  OR,
+  AND,
+  NOT,
+
+  // unary operators
+  ADDR,
+  DEREF,
+  INC,
+  DEC,
+
+  // validation
+  INVALID,
+  EoF
+} TokenType;
+
+typedef struct {
+
+  TokenType type;
+  str lexeme;
+  usize offset, line, col;
+
+} Token;
+
+struct Lexer {
+
+  str src;
+  std::vector<Token> tokenize(str &source);
+  usize offset = 0, line = 0, col = 0;
+
+  void isWhiteSpace();
+
+  Token makeToken(TokenType type, str lexeme, usize line, usize col);
+  Token symbolToken();
+  Token string();
+  Token setKeyword(str id);
+  Token ID();
+  Token Number();
+
+  void error(str msg);
+
+  // helpers
+  char peek();
+  char peekNext();
+  char peekPre();
+  char advance();
+  bool match(char c);
+  bool isAtEnd();
+};
