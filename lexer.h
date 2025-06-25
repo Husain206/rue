@@ -73,7 +73,7 @@ typedef struct {
 
   TokenType type;
   str lexeme;
-  usize offset, line, col;
+  usize line, col;
 
 } Token;
 
@@ -81,7 +81,7 @@ struct Lexer {
 
   str src;
   std::vector<Token> tokenize(str &source);
-  usize offset = 0, line = 0, col = 0;
+  usize offset = 0, line = 1, col = 0;
 
   void isWhiteSpace();
 
@@ -93,12 +93,13 @@ struct Lexer {
   Token Number();
 
   void error(str msg);
-
+  
   // helpers
   char peek();
   char peekNext();
   char peekPre();
   char advance();
+  char next();
   bool match(char c);
   bool isAtEnd();
 };
