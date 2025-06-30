@@ -87,7 +87,7 @@ struct Lexer {
 
   Token makeToken(TokenType type, str lexeme, usize line, usize col);
   Token symbolToken();
-  Token string();
+  Token toString();
   Token setKeyword(str id);
   Token ID();
   Token Number();

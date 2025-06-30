@@ -78,38 +78,35 @@ void Lexer::isWhiteSpace() {
      case '|': if(match('|')) return {OR, "||", line, col};   else break;
      case '&': if(match('&')) return {AND, "&&", line, col};  else return {ADDR, "&", line, col};
      case '!': return {NOT, "!", line, col};
-     case '"': return string();   
+     case '"': return toString();   
   }
   return {INVALID ,"", line, col};
 }
 
 
-Token Lexer::string() {
+Token Lexer::toString() {
   str string;
   while (peek() != '"' && !isAtEnd()) {
-    
-    if (next() == '\\') {
+    if (peek() == '\\') {
      switch (next()) {
-     case 'n': string += '\n'; break;
+     case 'n':  string += '\n'; break;
+     case '0':  string += '\0'; break;
      case 't':  string += '\t'; break;
      case 'r':  string += '\r'; break;
-     case '\\':  string += '\\'; break;
+     case '\\': string += '\\'; break;
      case 'b':  string += '\b'; break;
-     case 'f': string += '\f'; break;
-     case '"': string += '"'; break;
+     case 'f':  string += '\f'; break;
+     case '"':  string += '"';  break;
      default:
       string += '\\'; 
       string += next(); 
      error("unknown escape sequence \\" + string);
      }
-    } else   string += next();
+    } else string += next();
   }
 
-  if (isAtEnd()) {
-    error("Unterminated string.\n");
-  }
+  if (isAtEnd()) error("Unterminated string.\n");
   next();
-
   return {STRLIT, string, line, col};
 }
 
@@ -137,15 +134,15 @@ Token Lexer::setKeyword(str iden) {
 
 Token Lexer::ID() {
   str iden;
-  if(std::isdigit(peek())){
+  if(std::isdigit(peekPre())){
     error("cannot start an identifier with a number\n");
     }
     if (std::isalpha(peek())) {
     while (isalnum(peek())) {
       iden += next();
-    }
-    
+    }  
   }
+  
   return setKeyword(iden);
 }
 
