@@ -80,7 +80,7 @@ typedef struct {
 struct Lexer {
 
   str src;
-  std::vector<Token> tokenize(str &source);
+  std::vector<Token> tokenize(const str &source);
   usize offset = 0, line = 1, col = 0;
 
   void isWhiteSpace();

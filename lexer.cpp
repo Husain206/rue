@@ -148,13 +148,13 @@ Token Lexer::ID() {
 
 Token Lexer::Number() {
   str num;
-  while (std::isdigit(peek())) {
+  while (std::isdigit(peek()) || peek() == '.') {
     num += next();
   }
   return {NUMLIT, num, line, col};
 }
 
-std::vector<Token> Lexer::tokenize(str &source) {
+std::vector<Token> Lexer::tokenize(const str &source) {
   src = source;
   std::vector<Token> tokens;
 
@@ -166,7 +166,7 @@ std::vector<Token> Lexer::tokenize(str &source) {
     isWhiteSpace();
     if (std::isalpha(peek())) {
       tokens.push_back(ID());
-    } else if (isdigit(peek())) {
+    } else if (isdigit(peek()) || peek() == '.') {
       tokens.push_back(Number());
     } else {
       tokens.push_back(symbolToken());
