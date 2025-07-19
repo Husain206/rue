@@ -42,7 +42,8 @@ str Parser::nud(const Token& t){
       return inner;
     }
       default: std::cerr << "unexpected token: " << t.lexeme << ":" << t.line << ":" << t.col << std::endl;
-      return 0; 
+      return 0;
+      
     }
 }
 

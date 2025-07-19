@@ -102,4 +102,5 @@ struct Lexer {
   char next();
   bool match(char c);
   bool isAtEnd();
+
 };

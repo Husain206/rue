@@ -6,13 +6,9 @@ bool Lexer::isAtEnd() { return offset >= src.size(); }
 
 char Lexer::peek() { return (isAtEnd()) ? '\0' : src[offset]; }
 
-char Lexer::peekNext() {
-  return (offset + 1 >= src.size()) ? '\0' : src[offset + 1];
-}
+char Lexer::peekNext() { return (offset + 1 >= src.size()) ? '\0' : src[offset + 1]; }
 
-char Lexer::peekPre() {
-  return (offset == 0 || isAtEnd()) ? '\0' : src[offset - 1];
-}
+char Lexer::peekPre() { return (offset == 0 || isAtEnd()) ? '\0' : src[offset - 1]; }
 
 char Lexer::advance() { return (isAtEnd()) ? '\0' : src[offset++]; }
 

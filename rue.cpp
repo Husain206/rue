@@ -27,7 +27,6 @@ int main(int argc, char *argv[]) {
   Parser parser;
   parser.tokens = tokens;
   std::cout << parser.parseExpr();
-
   return 0; 
 }
 

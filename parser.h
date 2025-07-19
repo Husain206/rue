@@ -21,5 +21,4 @@ Token next();
 bool isAtEnd();
 bool match(TokenType type);
 
-  
 };
