@@ -10,63 +10,64 @@ typedef size_t usize;
 typedef enum {
 
   // keywords
-  ALA,
-  FOR,
-  IF,
-  ELSE,
-  PRINT,
-  SET,
-  FN,
-  RETURN,
-  NALL,
+  ALA = 0,
+  FOR = 1,
+  IF = 2,
+  ELSE = 3,
+  PRINT = 4,
+  SET = 5,
+  FN = 6,
+  RETURN = 7,
+  NALL = 8,
 
   // IDent
-  IDENT,
-  NUMLIT,
-  STRLIT,
-  VAR,
+  IDENT = 9,
+  NUMLIT = 10,
+  STRLIT = 11,
+  VAR = 12,
 
   // binary op
-  PLUS,
-  MINUS,
-  STAR,
-  SLASH,
-  EQ,
+  PLUS = 13,
+  MINUS = 14,
+  STAR = 15,
+  SLASH = 16,
+  EQ = 17,
 
   // symbols
-  RCB,
-  LCB, // { }
-  RPRN,
-  LPRN, // ( )
-  RB,
-  LB, // []
-  SEMIC,
-  COMMA,
-  DOT,
-  DQ,
-  SQ,
+  RCB = 18,
+  LCB = 19, // { }
+  RPRN = 20,
+  LPRN = 21, // ( )
+  RB = 22,
+  LB = 23, // []
+  SEMIC = 24,
+  COMMA = 25,
+  DOT = 26,
+  DQ = 27,
+  SQ = 28,
 
   // comparsion
-  EQEQ,
-  LQ,
-  BQ,
-  LST,
-  BGT,
+  NOTEQ = 29,
+  EQEQ = 30,
+  LQ = 31,
+  BQ = 32,
+  LST = 33,
+  BGT = 34,
 
   // logical operators
-  OR,
-  AND,
-  NOT,
+  OR = 35,
+  AND = 36,
+  NOT = 37,
 
   // unary operators
-  ADDR,
-  DEREF,
-  INC,
-  DEC,
+  ADDR = 38,
+  DEREF = 39,
+  INC = 40,
+  DEC = 41,
 
   // validation
-  INVALID,
-  EoF
+  INVALID = 42,
+  EoF = 43
 } TokenType;
 
 typedef struct {

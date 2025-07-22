@@ -1,6 +1,6 @@
 #include "lexer.h"
 #include <cctype>
-#include <vector>
+#include <unordered_map>
 
 bool Lexer::isAtEnd() { return offset >= src.size(); }
 
@@ -32,7 +32,7 @@ bool Lexer::match(char c) {
 }
 
 void Lexer::error(str msg) {
-  std::cerr << "main.ru:" << line << ":" << col << ":Lexer Error: " << msg
+  std::cerr << "main.ru:" << line << ":" << col << ": Error: " << msg
             << std::endl;
 
     exit(0);
@@ -53,7 +53,7 @@ void Lexer::isWhiteSpace() {
 
  Token Lexer::symbolToken(){
   char c = next();
-
+    
   switch (c) {
      case '+': if(match('+')) return {INC, "++", line, col}; else return {PLUS, "+", line, col};
      case '-': if(match('-')) return {DEC, "--", line, col}; else return {MINUS, "-", line, col};
@@ -62,8 +62,8 @@ void Lexer::isWhiteSpace() {
      case ',': return {COMMA, ",", line, col};
      case '.': return {DOT, ".", line, col};
      case ';': return {SEMIC, ";", line, col};
-     case '{': return {RCB, "{", line, col};
-     case '}': return {LCB, "}", line, col};
+     case '}': return {RCB, "}", line, col};
+     case '{': return {LCB, "{", line, col};
      case '(': return {LPRN, "(", line, col};
      case ')': return {RPRN, ")", line, col};
      case '[': return {LB, "[", line, col};
@@ -73,7 +73,7 @@ void Lexer::isWhiteSpace() {
      case '<': if(match('=')) return {LQ, "<=", line, col};   else return {LST, "<", line, col};
      case '|': if(match('|')) return {OR, "||", line, col};   else break;
      case '&': if(match('&')) return {AND, "&&", line, col};  else return {ADDR, "&", line, col};
-     case '!': return {NOT, "!", line, col};
+     case '!': if(match('=')) return {NOTEQ, "!=", line, col}; else return {NOT, "!", line, col};
      case '"': return toString();   
   }
   return {INVALID ,"", line, col};
@@ -107,24 +107,22 @@ Token Lexer::toString() {
 }
 
 Token Lexer::setKeyword(str iden) {
-  if (iden == "print")
-    return {PRINT, "print", line, col};
-  else if (iden == "while")
-    return {ALA, "while", line, col};
-  else if (iden == "if")
-    return {IF, "if", line, col};
-  else if (iden == "else")
-    return {ELSE, "else", line, col};
-  else if (iden == "for")
-    return {FOR, "for", line, col};
-  else if (iden == "set")
-    return {SET, "set", line, col};
-  else if (iden == "fn")
-    return {FN, "fn", line, col};
-  else if (iden == "return")
-    return {RETURN, "return", line, col};
-  else if (iden == "null")
-    return {NALL, "null", line, col};
+  static const std::unordered_map<str, TokenType> keywords = {
+    {"set", SET},
+    {"print", PRINT},
+    {"while", ALA},
+    {"if", IF},
+    {"else", ELSE},
+    {"for", FOR},
+    {"fn", FN},
+    {"return", RETURN},
+    {"null", NALL}
+  };
+
+  auto it = keywords.find(iden);
+  if (it != keywords.end()) {
+    return {it->second, iden, line, col};
+  }
   return {IDENT, iden, line, col};
 }
 
@@ -154,18 +152,21 @@ std::vector<Token> Lexer::tokenize(const str &source) {
   src = source;
   std::vector<Token> tokens;
 
-  while (true) {
-    if (isAtEnd()) {
+  while (!isAtEnd()) {
+    if(isAtEnd()){
       tokens.push_back({EoF, "", line, col});
       break;
     }
+    
     isWhiteSpace();
     if (std::isalpha(peek())) {
       tokens.push_back(ID());
     } else if (isdigit(peek()) || peek() == '.') {
       tokens.push_back(Number());
     } else {
-      tokens.push_back(symbolToken());
+       Token t = symbolToken();
+      if (t.type == INVALID && t.lexeme.empty()) continue;
+      tokens.push_back(t);
     }
   }
   return tokens;
