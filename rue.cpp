@@ -5,7 +5,9 @@
 #include <sstream>
 #include <string>
 
+
 int main(int argc, char *argv[]) {
+
   if (argc != 2) {
     std::cerr << "usage: [" << argv[0] << "] [file.ru]\n";
     return 1;
@@ -22,13 +24,11 @@ int main(int argc, char *argv[]) {
   str src = buffer.str();
 
   Lexer lexer;
-  std::vector<Token> tokens = lexer.tokenize(src);
-  
+  auto tokens = lexer.tokenize(src);
+
   Parser parser;
   parser.tokens = tokens;
-  std::cout << parser.parseExpr();
-  return 0; 
+  parser.parse();
+
+  return 0;
 }
-
-
-
