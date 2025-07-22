@@ -1,6 +1,6 @@
 #include "parser.h"
 #include "lexer.h"
-
+#include "ir.h"
 Token Parser::peek() { return (!isAtEnd()) ? tokens[current] : Token{EoF, "", peek().line, peek().col}; }
 
 Token Parser::peekNext() { return (!isAtEnd()) ? tokens[current + 1] : Token{EoF, "", peek().line, peek().col}; }
@@ -45,6 +45,7 @@ void Parser::parse() {
   while (!isAtEnd()) {
     parse_stmt();
   }
+  dump_ir();
 }
 
 void Parser::parse_stmt() {
@@ -77,7 +78,7 @@ void Parser::parse_set() {
     return;
   }
 
-  std::cout << "[set] " << name.lexeme << " = " << value << "\n";
+  emit_store(name.lexeme, value);
 }
 
 void Parser::parse_print() {
@@ -87,7 +88,7 @@ void Parser::parse_print() {
     return;
   }
 
-  std::cout << "[print] " << value << "\n";
+  emit_print(value);
 }
 
 
@@ -95,7 +96,7 @@ str Parser::parseExpr(int rbp) {
   Token t = next();
   str left = nud(t);
 
-  while (!isAtEnd() && rbp < lbp(peek())) {
+  while (!isAtEnd() && rbp < get_prec(peek().type)) {
     Token op = next();
     left = led(op, left);
   }
@@ -105,21 +106,31 @@ str Parser::parseExpr(int rbp) {
 
 str Parser::nud(const Token &t) {
   
-  if (t.type == NUMLIT || t.type == IDENT) {
-    return t.lexeme;
+  if (t.type == NUMLIT) {
+    str temp = new_temp();
+    emit_const(temp, t.lexeme);
+    return temp;
+  }
+
+  if(t.type == IDENT){
+    str temp = new_temp();
+    emit_load(temp, t.lexeme);
+    return temp;
   }
 
   if (t.type == LPRN) {
-    str val = parseExpr();
-    if (!match(RPRN)) {
-      std::cerr << "Expected ')'\n";
-    }
-    return "(" + val + ")";
+      str inner = parseExpr();
+      match(RPRN);  
+      return inner;
   }
 
   if (t.type == MINUS) {
-    str right = parseExpr(PREFIX);
-    return "(-" + right + ")";
+    str expr = parseExpr(PREFIX);
+    str zero = new_temp();
+    emit_const(zero, "0");
+    str res = new_temp();
+    emit_binop(res, zero, expr, SUB);
+    return res;
   }
 
   std::cerr << "Unexpected token in nud: " << t.lexeme << "\n";
@@ -128,7 +139,18 @@ str Parser::nud(const Token &t) {
 
 str Parser::led(const Token &t, str left) {
   str right = parseExpr(get_prec(t.type));
-  return "(" + left + " " + t.lexeme + " " + right + ")";
+  str res = new_temp();
+  IRop op;
+  switch (t.type) {
+    case PLUS: op = ADD; break;
+    case MINUS: op = SUB; break;
+    case STAR: op = MUL; break;
+    case SLASH: op = DIV; break;
+    default: std::cerr << "Unknown binary operator: " << t.lexeme << "\n";
+      return "<?>";
+  }
+  emit_binop(res, left, right, op);
+  return res;
 }
 
 int Parser::lbp(const Token &t) { return get_prec(t.type); }
