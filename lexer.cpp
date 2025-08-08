@@ -53,32 +53,35 @@ void Lexer::isWhiteSpace() {
 
  Token Lexer::symbolToken(){
   char c = next();
-    
+  if (isAtEnd()) return {EoF, "", line, col};
+  
+  usize a = col;
+  usize l = line;
   switch (c) {
-     case '+': if(match('+')) return {INC, "++", line, col}; else return {PLUS, "+", line, col};
-     case '-': if(match('-')) return {DEC, "--", line, col}; else return {MINUS, "-", line, col};
-     case '*': return {STAR, "*", line, col};
-     case '/': return {SLASH, "/", line, col};
-     case ',': return {COMMA, ",", line, col};
-     case '.': return {DOT, ".", line, col};
-     case ';': return {SEMIC, ";", line, col};
-     case '}': return {RCB, "}", line, col};
-     case '{': return {LCB, "{", line, col};
-     case '(': return {LPRN, "(", line, col};
-     case ')': return {RPRN, ")", line, col};
-     case '[': return {LB, "[", line, col};
-     case ']': return {RB, "]", line, col};
-     case '=': if(match('=')) return {EQEQ, "==", line, col}; else return {EQ, "=", line, col};
-     case '>': if(match('=')) return {BQ, ">=", line, col};   else return {BGT, ">", line, col};
-     case '<': if(match('=')) return {LQ, "<=", line, col};   else return {LST, "<", line, col};
-     case '|': if(match('|')) return {OR, "||", line, col};   else break;
-     case '&': if(match('&')) return {AND, "&&", line, col};  else return {ADDR, "&", line, col};
-     case '!': if(match('=')) return {NOTEQ, "!=", line, col}; else return {NOT, "!", line, col};
+     case '+': if(match('+')) return {INC, "++", line, a}; else return {PLUS, "+", line, a};
+     case '-': if(match('-')) return {DEC, "--", line, a}; else return {MINUS, "-", line, a};
+     case '*': return {STAR, "*", line, a};
+     case '/': return {SLASH, "/", line, a};
+     case ',': return {COMMA, ",", line, a};
+     case '.': return {DOT, ".", line, a};
+     case ';': return {SEMIC, ";", line, a};
+     case '{': /*bracketDeep.push_back(offset);*/ return {LCB, "{", l, a};
+     case '}': /*(bracketDeep.empty()) ? error("unmatched '}' - missing '{'") : bracketDeep.pop_back();*/ return {RCB, "}", line, a};
+     case '(': return {LPRN, "(", line, a};
+     case ')': return {RPRN, ")", line, a};
+     case '[': return {LB, "[", line, a};
+     case ']': return {RB, "]", line, a};
+     case '=': if(match('=')) return {EQEQ, "==", line, a}; else return {EQ, "=", line, a};
+     case '>': if(match('=')) return {GQ, ">=", line, a};   else return {GRT, ">", line, a};
+     case '<': if(match('=')) return {LQ, "<=", line, a};   else return {LST, "<", line, a};
+     case '|': if(match('|')) return {OR, "||", line, a};   else break;
+     case '&': if(match('&')) return {AND, "&&", line, a};  else return {ADDR, "&", line, a};
+     case '!': return {NOT, "!", line, a};
+
      case '"': return toString();   
   }
-  return {INVALID ,"", line, col};
+  return {INVALID ,"", line, a};
 }
-
 
 Token Lexer::toString() {
   str string;
@@ -110,7 +113,7 @@ Token Lexer::setKeyword(str iden) {
   static const std::unordered_map<str, TokenType> keywords = {
     {"set", SET},
     {"print", PRINT},
-    {"while", ALA},
+    {"ala", ALA},
     {"if", IF},
     {"else", ELSE},
     {"for", FOR},
@@ -158,6 +161,7 @@ std::vector<Token> Lexer::tokenize(const str &source) {
       break;
     }
     
+    
     isWhiteSpace();
     if (std::isalpha(peek())) {
       tokens.push_back(ID());
@@ -169,5 +173,9 @@ std::vector<Token> Lexer::tokenize(const str &source) {
       tokens.push_back(t);
     }
   }
+  /*if(!bracketDeep.empty()){
+        error("unmatched '{' - missing '}'");
+      }*/
+
   return tokens;
 }

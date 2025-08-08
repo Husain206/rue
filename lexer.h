@@ -50,24 +50,25 @@ typedef enum {
   NOTEQ = 29,
   EQEQ = 30,
   LQ = 31,
-  BQ = 32,
+  GQ = 32,
   LST = 33,
-  BGT = 34,
+  GRT = 34,
 
   // logical operators
   OR = 35,
   AND = 36,
   NOT = 37,
+  MOD = 38,
 
   // unary operators
-  ADDR = 38,
-  DEREF = 39,
-  INC = 40,
-  DEC = 41,
+  ADDR = 39,
+  DEREF = 40,
+  INC = 41,
+  DEC = 42,
 
   // validation
-  INVALID = 42,
-  EoF = 43
+  INVALID = 43,
+  EoF = 44
 } TokenType;
 
 typedef struct {
@@ -82,6 +83,7 @@ struct Lexer {
 
   str src;
   std::vector<Token> tokenize(const str &source);
+  std::vector<int> bracketDeep;
   usize offset = 0, line = 1, col = 0;
 
   void isWhiteSpace();
