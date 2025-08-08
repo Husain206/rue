@@ -52,4 +52,8 @@ bool check(TokenType type);
 bool match(TokenType type);
 void consume(const TokenType& t, str msg);
 
+// check parser
+    int indent = 0;
+    void printWithIndent(const str& s);
+
 };

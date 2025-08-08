@@ -1,6 +1,16 @@
 #include "parser.h"
 #include "lexer.h"
+#include <cstdarg>
 
+// *****************
+// check parser
+
+void Parser::printWithIndent(const str& s) {
+    for (int i = 0; i < indent; i++) std::cout << "  ";
+    std::cout << s << std::endl;
+}
+
+// *****************
 
 Token Parser::peek() { return (!isAtEnd()) ? tokens[current] : Token{EoF, "", 0, 0}; }
 
@@ -53,6 +63,7 @@ prec get_prec(TokenType type) {
    case NOTEQ:
    case OR:
    case AND:
+   case MOD:
     return COMP;
    case NOT:
    case ADDR:
@@ -110,6 +121,7 @@ void Parser::parse_set() {
   str value = parseExpr();
 
     consume(SEMIC,"Expected ';' at the end of set\n");
+    printWithIndent("set " + name.lexeme + " = " + value + ";");
 }
 
 void Parser::parse_print() {
@@ -117,6 +129,7 @@ void Parser::parse_print() {
   
   str value = parseExpr();
   consume(SEMIC, "Expected ';' at the end of print\n");
+  printWithIndent("print " + value + ";");
 }
 
 
@@ -126,7 +139,11 @@ void Parser::parse_ala(){
   str cond = parseExpr();
      consume(RPRN,"expected ')' after condition in ala\n" );
      consume(LCB,"expected '{' after ')' in ala\n" );
+     printWithIndent("ala (" + cond + ") {");
+     indent++;
   while(!check(RCB) && !isAtEnd()) parse_stmt();
+  indent--;
+  printWithIndent("}");
      consume(RCB,"expected '}' at the end of ala\n" );
 }
 
@@ -137,12 +154,20 @@ void Parser::parse_if(){
      str cond = parseExpr();
      consume(RPRN,"expected ')' after condition in if\n" );
      consume(LCB,"expected '{' after ')' in if\n" );
+      printWithIndent("if (" + cond + ") {");
+      indent++;
      while(!check(RCB) && !isAtEnd()) parse_stmt();
+     indent--;
+      printWithIndent("}");
      consume(RCB,"expected '}' at the end of if\n" );
 
      if(match(ELSE)){
      consume(LCB,"expected '{' after ')' in if\n" );
+      printWithIndent("else {");
+      indent++;
      while(!check(RCB) && !isAtEnd()) parse_stmt();
+      indent--;
+      printWithIndent("}");
      consume(RCB,"expected '}' at the end of if\n" );
      }
 
@@ -154,17 +179,29 @@ void Parser::parse_for_loop(){
   next();
   consume(LPRN,"expected '(' after loop\n");
 
-  if(check(SET)) parse_set();
+  if(check(SET)){
+    printWithIndent("init: ");
+        indent++;
+    parse_set();
+        indent--;
+    }
   else consume(SET , "Expected set statement in for loop init");
   
   str cond = parseExpr();
   consume(SEMIC,"Expected ';' after condition in for loop\n");
+   printWithIndent("cond: " + cond);
   
   str valueInc = parseExpr();
   consume(RPRN,"expected ')' after condition in for loop\n" );
+  printWithIndent("inc: " + valueInc);
   
   consume(LCB,"expected '{' after ')' in for loop\n" );
+  printWithIndent("for {");
+  indent++;
+  
   while(!check(RCB) && !isAtEnd()) parse_stmt();
+  indent--;
+   printWithIndent("}");
   consume(RCB,"expected '}' at the end of for loop\n" );
 }
 
@@ -230,6 +267,9 @@ str Parser::parseExpr(int rbp) {
 
 str Parser::nud(const Token &t) {
   switch (t.type) {
+    case STRLIT:
+      return "\"" + t.lexeme + "\"";
+    
     case IDENT: {
         return t.lexeme;
     }
