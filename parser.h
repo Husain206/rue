@@ -9,6 +9,7 @@ enum prec {
   ASS,
   SUM,
   PRODUCT,
+  COMP,
   PREFIX,
   POSTFIX,
 };
@@ -25,6 +26,13 @@ void parse();
 void parse_stmt();
 void parse_set();
 void parse_print();
+void parse_ala();
+void parse_if();
+void parse_for_loop();
+// void parse_return();
+// std::vector<Token> parse_params();
+// void parse_fn();
+// str parse_fn_call(const str& fn_name);
 
 
 // pratt parser
@@ -35,13 +43,13 @@ str led(const Token& t, str left);
 
 // helpers
 Token peek();
-Token peekNext();
-Token peekPre();
+// Token peekNext();
+// Token peekPre();
 Token next();
 
 bool isAtEnd();
 bool check(TokenType type);
 bool match(TokenType type);
+void consume(const TokenType& t, str msg);
 
-// void consume(TokenType type, const str msg);
 };
