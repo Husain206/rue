@@ -1,22 +1,19 @@
+
 #include "parser.h"
+#include "ast.h"
 #include "lexer.h"
-#include <cstdarg>
+#include <iostream>
+#include <memory>
 
-// *****************
-// check parser
-
-void Parser::printWithIndent(const str& s) {
-    for (int i = 0; i < indent; i++) std::cout << "  ";
-    std::cout << s << std::endl;
+Token Parser::peek() {
+  return (!isAtEnd()) ? tokens[current] : Token{EoF, "", 0, 0};
 }
 
-// *****************
+// Token Parser::peekNext() { return (!isAtEnd()) ? tokens[current + 1] :
+// Token{EoF, "", 0, 0}; }
 
-Token Parser::peek() { return (!isAtEnd()) ? tokens[current] : Token{EoF, "", 0, 0}; }
-
-// Token Parser::peekNext() { return (!isAtEnd()) ? tokens[current + 1] : Token{EoF, "", 0, 0}; }
-
-// Token Parser::peekPre() { return (!isAtEnd()) ? tokens[current - 1] : Token{EoF, "", 0, 0}; }
+// Token Parser::peekPre() { return (!isAtEnd()) ? tokens[current - 1] :
+// Token{EoF, "", 0, 0}; }
 
 Token Parser::next() {
   if (!isAtEnd())
@@ -24,7 +21,9 @@ Token Parser::next() {
   return tokens[current - 1];
 }
 
-bool Parser::isAtEnd() { return current >= tokens.size() || tokens[current].type == EoF; }
+bool Parser::isAtEnd() {
+  return current >= tokens.size() || tokens[current].type == EoF;
+}
 
 bool Parser::check(TokenType type) { return peek().type == type; }
 
@@ -36,13 +35,13 @@ bool Parser::match(TokenType type) {
   return false;
 }
 
-void Parser::consume(const TokenType& t, str msg){
-  if(!check(t)){
-  std::cerr << "main.ru:" << peek().line << ":" << peek().col << ": Error: " << msg
-            << std::endl;
-    return;
-    }
-    next();
+void Parser::consume(const TokenType &t, str msg) {
+  if (!check(t)) {
+    std::cerr << "main.ru:" << peek().line << ":" << peek().col
+              << ": Error: " << msg;
+    exit(0);
+  }
+  next();
 }
 
 prec get_prec(TokenType type) {
@@ -55,295 +54,297 @@ prec get_prec(TokenType type) {
   case STAR:
   case SLASH:
     return PRODUCT;
-   case LST:
-   case GRT:
-   case LQ:
-   case GQ:
-   case EQEQ:  
-   case NOTEQ:
-   case OR:
-   case AND:
-   case MOD:
+  case LST:
+  case GRT:
+  case LQ:
+  case GQ:
+  case EQEQ:
+  case NOTEQ:
+  case OR:
+  case AND:
+  case MOD:
     return COMP;
-   case NOT:
-   case ADDR:
-   case DEREF:
-   case INC:
-   case DEC:
-     return PREFIX;
-   // case INC:
-   // case DEC:
-   //   return POSTFIX;
+  case NOT:
+  case ADDR:
+  case DEREF:
+  case INC:
+  case DEC:
+    return PREFIX;
+    // case INC:
+    // case DEC:
+    //   return POSTFIX;
   default:
     return NONE;
   }
 }
 
-void Parser::parse() {
+unique_ptr<Node> Parser::parse() {
+  auto block = make_unique<Node>(n_expr_stmt);
   while (!isAtEnd()) {
-    parse_stmt();
+    auto s = parse_stmt();
+    if (s)
+      block->children.push_back(std::move(s));
+    else
+      break;
   }
+  return block;
 }
 
-void Parser::parse_stmt() {
-    if (check(SET)) {
-    parse_set();
+unique_ptr<Node> Parser::parse_stmt() {
+  if (check(SET)) {
+    return parse_set();
   } else if (check(PRINT)) {
-    parse_print();
-  } else if(check(ALA)){
-    parse_ala();
-  } else if(check(IF)){
-    parse_if();
-  } else if(check(FOR)){
-    parse_for_loop();
-  // } else if(check(RETURN)){
-  //   parse_return();
-  // } else if(check(FN)){
-  //   parse_fn();
-  } else {
-    consume(peek().type, "unknown statments at token: " + peek().lexeme);
-    next();
-    // parseExpr();
+    return parse_print();
+  } else if (check(ALA)) {
+    return parse_ala();
+  } else if (check(IF)) {
+    return parse_if();
+  } else if (check(FOR)) {
+    return parse_for_loop();
+    // } else if(check(RETURN)){
+    //   parse_return();
+    // } else if(check(FN)){
+    //   parse_fn();
   }
+
+  auto expr = parseExpr();
+  if (expr) {
+    consume(SEMIC, "Expected ';' after expression");
+    auto node = make_unique<Node>(n_expr_stmt);
+    node->children.push_back(std::move(expr));
+    return node;
+  }
+
+  return nullptr;
 }
 
-void Parser::parse_set() {
+unique_ptr<Node> Parser::parse_set() {
   next();
   Token name = next();
   if (name.type != IDENT) {
-    std::cerr << "Expected identifier after 'set' at " << peek().line << ":" << peek().col << "\n";
-    return;
+    std::cerr << "Expected identifier after 'set' at " << peek().line << ":"
+              << peek().col << "\n";
+    return nullptr;
   }
-  
 
-    consume(EQ,"Expected '=' after identifier in set\n");
- 
-  str value = parseExpr();
+  consume(EQ, "Expected '=' after identifier in set\n");
+  auto value = parseExpr();
+  consume(SEMIC, "Expected ';' at the end of set\n");
 
-    consume(SEMIC,"Expected ';' at the end of set\n");
-    printWithIndent("set " + name.lexeme + " = " + value + ";");
+  auto node = make_unique<Node>(n_set);
+  auto ident = make_unique<Node>(n_id);
+  ident->lexeme = name.lexeme;
+  node->children.push_back(std::move(ident));
+  node->children.push_back(std::move(value));
+
+  return node;
 }
 
-void Parser::parse_print() {
+unique_ptr<Node> Parser::parse_print() {
   next();
-  
-  str value = parseExpr();
+
+  auto value = parseExpr();
   consume(SEMIC, "Expected ';' at the end of print\n");
-  printWithIndent("print " + value + ";");
+
+  auto node = make_unique<Node>(n_print);
+  node->children.push_back(std::move(value));
+
+  return node;
 }
 
-
-void Parser::parse_ala(){
+unique_ptr<Node> Parser::parse_ala() {
   next();
-     consume(LPRN,"expected '(' after ala\n" );
-  str cond = parseExpr();
-     consume(RPRN,"expected ')' after condition in ala\n" );
-     consume(LCB,"expected '{' after ')' in ala\n" );
-     printWithIndent("ala (" + cond + ") {");
-     indent++;
-  while(!check(RCB) && !isAtEnd()) parse_stmt();
-  indent--;
-  printWithIndent("}");
-     consume(RCB,"expected '}' at the end of ala\n" );
+  consume(LPRN, "expected '(' after ala\n");
+  auto cond = parseExpr();
+  consume(RPRN, "expected ')' after condition in ala\n");
+  consume(LCB, "expected '{' after ')' in ala\n");
+
+  auto node = make_unique<Node>(n_block);
+  while (!check(RCB) && !isAtEnd()) {
+    auto s = parse_stmt();
+    if (s)
+      node->children.push_back(std::move(s));
+    else
+      break;
+  }
+  consume(RCB, "expected '}' at the end of ala\n");
+
+  auto wrapper = make_unique<Node>(n_ala);
+  wrapper->children.push_back(std::move(cond));
+  wrapper->children.push_back(std::move(node));
+  return wrapper;
 }
 
-
-void Parser::parse_if(){
+unique_ptr<Node> Parser::parse_if() {
   next();
-     consume(LPRN,"expected '(' after if\n" );
-     str cond = parseExpr();
-     consume(RPRN,"expected ')' after condition in if\n" );
-     consume(LCB,"expected '{' after ')' in if\n" );
-      printWithIndent("if (" + cond + ") {");
-      indent++;
-     while(!check(RCB) && !isAtEnd()) parse_stmt();
-     indent--;
-      printWithIndent("}");
-     consume(RCB,"expected '}' at the end of if\n" );
+  consume(LPRN, "expected '(' after if\n");
+  auto cond = parseExpr();
+  consume(RPRN, "expected ')' after condition in if\n");
+  consume(LCB, "expected '{' after ')' in if\n");
 
-     if(match(ELSE)){
-     consume(LCB,"expected '{' after ')' in if\n" );
-      printWithIndent("else {");
-      indent++;
-     while(!check(RCB) && !isAtEnd()) parse_stmt();
-      indent--;
-      printWithIndent("}");
-     consume(RCB,"expected '}' at the end of if\n" );
-     }
+  auto body = make_unique<Node>(n_block);
+  while (!check(RCB) && !isAtEnd()) {
+    auto s = parse_stmt();
+    if (s)
+      body->children.push_back(std::move(s));
+    else
+      break;
+  }
+  consume(RCB, "expected '}' at the end of if\n");
 
+  auto node = make_unique<Node>(n_if);
+  node->children.push_back(std::move(cond));
+  node->children.push_back(std::move(body));
+
+  if (match(ELSE)) {
+    consume(LCB, "expected '{' after ')' in if\n");
+    auto elseBody = make_unique<Node>(n_else);
+
+    while (!check(RCB) && !isAtEnd()) {
+      auto s = parse_stmt();
+      if (s)
+        elseBody->children.push_back(std::move(s));
+      else
+        break;
+    }
+
+    consume(RCB, "expected '}' at the end of if\n");
+    node->children.push_back(std::move(elseBody));
+  }
+  return node;
 }
+
 // for (set i = 0; i < 10; i++)
 
+unique_ptr<Node> Parser::parse_for_loop(){
+    next();
+    consume(LPRN,"expected '(' after loop\n");
 
-void Parser::parse_for_loop(){
-  next();
-  consume(LPRN,"expected '(' after loop\n");
+    unique_ptr<Node> init = nullptr;
+    if(check(SET)) init = parse_set();
 
-  if(check(SET)){
-    printWithIndent("init: ");
-        indent++;
-    parse_set();
-        indent--;
+    else {
+      if(check(SEMIC)) next();
+      else std::cerr << "Expected 'set' or ';' in for-init\n";
     }
-  else consume(SET , "Expected set statement in for loop init");
-  
-  str cond = parseExpr();
-  consume(SEMIC,"Expected ';' after condition in for loop\n");
-   printWithIndent("cond: " + cond);
-  
-  str valueInc = parseExpr();
-  consume(RPRN,"expected ')' after condition in for loop\n" );
-  printWithIndent("inc: " + valueInc);
-  
-  consume(LCB,"expected '{' after ')' in for loop\n" );
-  printWithIndent("for {");
-  indent++;
-  
-  while(!check(RCB) && !isAtEnd()) parse_stmt();
-  indent--;
-   printWithIndent("}");
-  consume(RCB,"expected '}' at the end of for loop\n" );
+
+    auto cond = parseExpr();
+    consume(SEMIC,"Expected ';' after condition in for loop\n");
+
+    auto inc = parseExpr();
+    consume(RPRN,"expected ')' after condition in for loop\n" );
+
+    consume(LCB,"expected '{' after ')' in for loop\n" );
+
+    auto body = make_unique<Node>(n_block);
+    while(!check(RCB) && !isAtEnd()){
+      auto s = parse_stmt();
+      if(s) body->children.push_back(std::move(s));
+      else break;
+    }
+    consume(RCB,"expected '}' at the end of for loop\n" );
+
+    auto node = make_unique<Node>(n_for_loop);
+    node->children.push_back(std::move(init)); // could be nullptr
+    node->children.push_back(std::move(cond));
+    node->children.push_back(std::move(inc));
+    node->children.push_back(std::move(body));
+
+    return node;
 }
 
-// void Parser::parse_return(){
-//   next();
-//   Token id = next();
-//   if(id.type != IDENT){
-//      std::cerr << "Expected identifier after 'return' at " << peek().line << ":" << peek().col << "\n";
-//      return;
-//   }
-//   consume(SEMIC,"Expected ';' after " + id.lexeme + " in return statement\n");
-// }
-
-// std::vector<Token> Parser::parse_params(){
-//    std::vector<Token> params;
-//    if(check(RPRN)) return params;
-
-//    do {
-//      Token param = next();
-//      if (param.type != IDENT) {
-//         std::cerr << "Expected identifier in parameter list at " << param.line << ":" << param.col << "\n";
-//       break;
-//      }
-//      params.push_back(param);
-//    } while(match(COMMA));
-
-//    return params;
-// }
-
-// void Parser::parse_fn(){
-//   next();
-//   Token name = next();
-//   if(name.type != IDENT){
-//      std::cerr << "Expected identifier after 'fn' at " << peek().line << ":" << peek().col << "\n";
-//      return;
-//   }
-//    consume(LPRN, "expected '(' after " + name.lexeme + "\n" );
-//    std::vector<Token> params = parse_params();
-//    consume(RPRN, "expected ')' after declaring parameters in fn " + name.lexeme + "\n");
-//    consume(LCB, "expected '{' after ')' in fn " + name.lexeme + "\n");
-//    while(!check(RETURN) && !isAtEnd()) parse_stmt();
-//    if(!check(RETURN)){
-//      std::cerr << "expetced return statment in the end of 'fn " << name.lexeme << "' at "<< peek().line << ":" << peek().col << "\n";
-//      return;
-//    } else {
-//    parse_return();
-//    }
-//    consume(RCB, "expected '}' at the end of fn " + name.lexeme + "\n");
-// }
-
-
-str Parser::parseExpr(int rbp) {
+unique_ptr<Node> Parser::parseExpr(int rbp) {
   Token t = next();
-  str left = nud(t);
+  unique_ptr<Node> left = nud(t);
 
   while (!isAtEnd() && rbp < get_prec(peek().type)) {
     Token op = next();
-    left = led(op, left);
+    left = led(op, std::move(left));
   }
 
   return left;
 }
 
-str Parser::nud(const Token &t) {
+unique_ptr<Node> Parser::nud(const Token &t) {
   switch (t.type) {
-    case STRLIT:
-      return "\"" + t.lexeme + "\"";
-    
-    case IDENT: {
-        return t.lexeme;
-    }
-    case NUMLIT:
-        return t.lexeme;
-    
-    case LPRN: {
-         str inner = parseExpr();
-         if(!match(RPRN)) std::cerr << "expected ')' at: " << t.line << ":" << t.col << std::endl;
-         return "(" + inner + ")";
-    }
-    case MINUS:
-      return "-" + parseExpr(lbp(t));
+  case ASCII_CH:
+  case STRLIT: {
+    auto node = make_unique<Node>(n_str);
+    node->lexeme = t.lexeme;
+    return node;
+  }
+  case IDENT: {
+    auto node = make_unique<Node>(n_id);
+    node->lexeme = t.lexeme;
+    return node;
+  }
+  case NUMLIT: {
+    auto node = make_unique<Node>(n_num);
+    node->lexeme = t.lexeme;
+    return node;
+  }
+  case LPRN: {
+    unique_ptr<Node> inner = parseExpr();
+    if (!match(RPRN))
+      std::cerr << "expected ')' at: " << t.line << ":" << t.col
+                << std::endl; // maybe consume
+    return inner;
+  }
 
-    case PLUS:
-      return "+" + parseExpr(lbp(t));
-
-    case NOT:
-      return "!" + parseExpr(lbp(t));
-
-    case INC:
-      return "++" + parseExpr(lbp(t));
-      
-    case DEC:
-      return "--" + parseExpr(lbp(t));
-      
-    case ADDR:
-      return "&" + parseExpr(lbp(t));
-      
-    case DEREF:
-      return "*" + parseExpr(lbp(t));
-    
-    default: std::cerr << "unexpected token: '" << t.lexeme << "' :" << t.line << ":" << t.col << std::endl;
-    return "";
+  case MINUS:
+  case PLUS:
+  case NOT:
+  case INC:
+  case DEC:
+  case ADDR:
+  case DEREF: {
+    auto node = make_unique<Node>(n_unary);
+    node->op = t.type;
+    node->lexeme = t.lexeme;
+    node->children.push_back(parseExpr(lbp(t)));
+    return node;
+  }
+  default:
+    std::cerr << "unexpected token: '" << t.lexeme << "' :" << t.line << ":"
+              << t.col << std::endl;
+    return nullptr;
   }
 }
 
-str Parser::led(const Token &t, str left) {
-  switch (t.type) {
-    case PLUS:
-      return "(" + left + " + " + parseExpr(lbp(t)) + ")";
-    case MINUS:
-      return "(" + left + " - " + parseExpr(lbp(t)) + ")";
-    case STAR:
-      return "(" + left + " * " + parseExpr(lbp(t)) + ")";
-    case SLASH:
-      return "(" + left + " / " + parseExpr(lbp(t)) + ")";
-    case MOD:
-      return "(" + left + " % " + parseExpr(lbp(t)) + ")";
-    case EQEQ:
-      return "(" + left + " == " + parseExpr(lbp(t)) + ")";
-    case NOTEQ:
-      return "(" + left + " != " + parseExpr(lbp(t)) + ")";
-    case AND:
-      return "(" + left + " && " + parseExpr(lbp(t)) + ")";
-    case OR:
-      return "(" + left + " || " + parseExpr(lbp(t)) + ")";
-    case LST:
-      return "(" + left + " < " + parseExpr(lbp(t)) + ")";
-    case GRT:
-      return "(" + left + " > " + parseExpr(lbp(t)) + ")";
-    case LQ:
-      return "(" + left + " <= " + parseExpr(lbp(t)) + ")";
-    case GQ:
-      return "(" + left + " >= " + parseExpr(lbp(t)) + ")";
-    case EQ:
-      return "(" + left + " = " + parseExpr(lbp(t) - 1); // right-ass
-            
-    default:
-      std::cerr << "Unhandled infix operator: " << t.lexeme << "\n";
-      return left;
-  }
+unique_ptr<Node> Parser::led(const Token &t, unique_ptr<Node> left) {
+ switch(t.type){ 
+  case PLUS:
+  case MINUS:
+  case STAR:
+  case SLASH:
+  case MOD:
+  case EQEQ:
+  case NOTEQ:
+  case AND:
+  case OR:
+  case LST:
+  case GRT:
+  case LQ:
+  case GQ:{
+      auto n = make_unique<Node>(n_binary);
+      n->op = t.type;
+      n->lexeme = t.lexeme;
+      n->children.push_back(std::move(left));
+      n->children.push_back(parseExpr(lbp(t)));
+      return n;
+      }
+  case EQ: {
+         auto n = make_unique<Node>(n_assign);
+         n->op = t.type;
+         n->lexeme = t.lexeme;
+         n->children.push_back(std::move(left));
+         n->children.push_back(parseExpr(lbp(t) - 1));
+         return n;
+       }
+   default:
+     std::cerr << "Unhandled infix operator: " << t.lexeme << "\n";
+     return left;
+    }
 }
-
-
 
 int Parser::lbp(const Token &t) { return get_prec(t.type); }

@@ -1,7 +1,10 @@
+
 #pragma once
 
 #include "lexer.h"
+#include <memory>
 #include <vector>
+#include "ast.h"
 
 
 enum prec {
@@ -22,13 +25,13 @@ std::vector<Token> tokens;
 usize current = 0;
 
 // recursive decent parser
-void parse();
-void parse_stmt();
-void parse_set();
-void parse_print();
-void parse_ala();
-void parse_if();
-void parse_for_loop();
+unique_ptr<Node> parse();
+unique_ptr<Node> parse_stmt();
+unique_ptr<Node> parse_set();
+unique_ptr<Node> parse_print();
+unique_ptr<Node> parse_ala();
+unique_ptr<Node> parse_if();
+unique_ptr<Node> parse_for_loop();
 // void parse_return();
 // std::vector<Token> parse_params();
 // void parse_fn();
@@ -36,10 +39,10 @@ void parse_for_loop();
 
 
 // pratt parser
-str parseExpr(int rbp = 0);
+unique_ptr<Node> parseExpr(int rbp = 0);
 int lbp(const Token& t);
-str nud(const Token& t);
-str led(const Token& t, str left);
+unique_ptr<Node> nud(const Token& t);
+unique_ptr<Node> led(const Token& t, unique_ptr<Node> left);
 
 // helpers
 Token peek();
