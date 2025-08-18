@@ -2,6 +2,7 @@
 #include <cctype>
 #include <unordered_map>
 
+
 bool Lexer::isAtEnd() { return offset >= src.size(); }
 
 char Lexer::peek() { return (isAtEnd()) ? '\0' : src[offset]; }
@@ -77,11 +78,44 @@ void Lexer::isWhiteSpace() {
      case '|': if(match('|')) return {OR, "||", line, a};   else break;
      case '&': if(match('&')) return {AND, "&&", line, a};  else return {ADDR, "&", line, a};
      case '!': return {NOT, "!", line, a};
+     case '%': return {MOD, "%", line, a};
 
-     case '"': return toString();   
+     case '"': return toString();
+     case '\'': return toAscii();
   }
   return {INVALID ,"", line, a};
 }
+
+Token Lexer::toAscii() {
+    if (isAtEnd()) error("Unterminated character literal.\n");
+
+    str ch;
+    char c = next();
+
+    if (c == '\\') { 
+        char e = next();
+        switch (e) {
+            case 'n': ch = "\n"; break;
+            case 't': ch = "\t"; break;
+            case 'r': ch = "\r"; break;
+            case '0': ch = "\0"; break;
+            case '\'': ch = "\'"; break;
+            case '\\': ch = "\\"; break;
+            default:
+                error(std::string("unknown escape sequence \\") + e + "\n");
+        }
+    } else {
+        ch = c;
+    }
+
+    if (peek() != '\'') {
+        error("Character literal too long or unterminated.\n");
+    }
+    next(); 
+
+    return {ASCII_CH, ch, line, col};
+}
+
 
 Token Lexer::toString() {
   str string;

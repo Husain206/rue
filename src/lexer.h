@@ -10,65 +10,66 @@ typedef size_t usize;
 typedef enum {
 
   // keywords
-  ALA = 0,
-  FOR = 1,
-  IF = 2,
-  ELSE = 3,
-  PRINT = 4,
-  SET = 5,
-  FN = 6,
-  RETURN = 7,
-  NALL = 8,
+  ALA,
+  FOR,
+  IF,
+  ELSE,
+  PRINT,
+  SET,
+  FN,
+  RETURN,
+  NALL,
 
   // IDent
-  IDENT = 9,
-  NUMLIT = 10,
-  STRLIT = 11,
-  VAR = 12,
+  IDENT,
+  NUMLIT,
+  STRLIT,
+  ASCII_CH,
+  VAR,
 
   // binary op
-  PLUS = 13,
-  MINUS = 14,
-  STAR = 15,
-  SLASH = 16,
-  EQ = 17,
+  PLUS,
+  MINUS,
+  STAR,
+  SLASH,
+  EQ,
 
   // symbols
-  RCB = 18,
-  LCB = 19, // { }
-  RPRN = 20,
-  LPRN = 21, // ( )
-  RB = 22,
-  LB = 23, // []
-  SEMIC = 24,
-  COMMA = 25,
-  DOT = 26,
-  DQ = 27,
-  SQ = 28,
+  RCB,
+  LCB, // { }
+  RPRN,
+  LPRN, // ( )
+  RB,
+  LB, // []
+  SEMIC,
+  COMMA,
+  DOT,
+  DQ,
+  SQ,
 
   // comparsion
-  NOTEQ = 29,
-  EQEQ = 30,
-  LQ = 31,
-  GQ = 32,
-  LST = 33,
-  GRT = 34,
+  NOTEQ,
+  EQEQ,
+  LQ,
+  GQ,
+  LST,
+  GRT,
 
   // logical operators
-  OR = 35,
-  AND = 36,
-  NOT = 37,
-  MOD = 38,
+  OR,
+  AND,
+  NOT,
+  MOD,
 
   // unary operators
-  ADDR = 39,
-  DEREF = 40,
-  INC = 41,
-  DEC = 42,
+  ADDR,
+  DEREF,
+  INC,
+  DEC,
 
   // validation
-  INVALID = 43,
-  EoF = 44
+  INVALID,
+  EoF,
 } TokenType;
 
 typedef struct {
@@ -91,6 +92,7 @@ struct Lexer {
   Token makeToken(TokenType type, str lexeme, usize line, usize col);
   Token symbolToken();
   Token toString();
+  Token toAscii();
   Token setKeyword(str id);
   Token ID();
   Token Number();

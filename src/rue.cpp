@@ -1,3 +1,4 @@
+#include "ast.h"
 #include "lexer.h"
 #include "parser.h"
 #include <fstream>
@@ -28,7 +29,8 @@ int main(int argc, char *argv[]) {
 
   Parser parser;
   parser.tokens = tokens;
-  parser.parse();
-
+  auto ast = parser.parse();
+  printAST(ast.get());
   return 0;
 }
+
