@@ -1,6 +1,8 @@
 #include "ast.h"
+#include "runtime.h"
 #include "lexer.h"
 #include "parser.h"
+#include <exception>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -30,7 +32,14 @@ int main(int argc, char *argv[]) {
   Parser parser;
   parser.tokens = tokens;
   auto ast = parser.parse();
-  printAST(ast.get());
+  // printAST(ast.get());
+  Interpreter inter;
+  try{
+    inter.run(ast.get());
+  } catch(const exception& e){
+    cerr << "runtime error: " << e.what() << endl; 
+  }
+  
   return 0;
 }
 

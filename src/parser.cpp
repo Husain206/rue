@@ -110,7 +110,7 @@ unique_ptr<Node> Parser::parse_stmt() {
   auto expr = parseExpr();
   if (expr) {
     consume(SEMIC, "Expected ';' after expression");
-    auto node = make_unique<Node>(n_expr_stmt);
+    auto node = make_unique<Node>(n_block);
     node->children.push_back(std::move(expr));
     return node;
   }

@@ -1,0 +1,180 @@
+#include "runtime.h"
+#include "ast.h"
+#include "lexer.h"
+#include <bits/types/cookie_io_functions_t.h>
+#include <optional>
+#include <stdexcept>
+#include <string>
+
+Value Value::Int(long long v){
+  Value x;
+  x.type = Type::Int;
+  x.i = v;
+  return x;
+}
+
+Value Value::String(string v){
+  Value x;
+  x.type = Type::Str;
+  x.s = v;
+  return x;
+}
+
+Value Value::Bool(bool v){
+  Value x;
+  x.type = Type::Bool;
+  x.b = v;
+  return x;
+}
+
+Value Value::Nil(){
+  return Value{};
+}
+
+string Value::toString() const {
+  switch (type) {
+    case Type::Int: return std::to_string(i);
+    case Type::Str: return s;
+    case Type::Bool: return b ? "true" : "false";
+    case Type::Nil: return "nil";
+  }
+  return "nil";
+}
+
+bool Value::truthy() const {
+  switch(type){
+    case Type::Int: return i != 0;
+    case Type::Str: return !s.empty();
+    case Type::Bool: return b;
+    case Type::Nil: return false;
+  }
+  return false;
+}
+
+void Env::push(){
+  scopes.emplace_back();
+}
+
+void Env::pop(){
+  if(!scopes.empty()) scopes.pop_back();
+}
+
+bool Env::define(const string& name, const Value& v){
+  if(scopes.empty()) scopes.emplace_back();
+   scopes.back()[name] = v;
+   return true;
+}
+
+bool Env::assign(const string& name, const Value& v){
+  for(auto it = scopes.rbegin(); it != scopes.rend(); it++){
+    auto f = it->find(name);
+    if(f != it->end()) { f->second = v; return true; }
+  }
+  return define(name, v);
+}
+
+optional<Value> Env::get(const string& name) const {
+    for(auto it = scopes.rbegin(); it != scopes.rend(); it++){
+      auto f = it->find(name);
+      if(f != it->end()) { return f->second; }
+    }
+    return nullopt;
+}
+
+void Interpreter::run(const Node* root){
+  if(!root || root->type != n_block) throw runtime_error("program must be a block");
+  exec_block(root);
+}
+
+void Interpreter::exec(const Node* n){
+  if(!n) return;
+
+  switch (n->type) {
+    case n_set: exec_set(n); break;
+    case n_print: exec_print(n); break;
+    case n_expr_stmt: (void)eval(n->children[0].get()); break;
+    case n_block: exec_block(n); break;
+      default: throw runtime_error("exec: unsupported node");
+  }
+}
+
+void Interpreter::exec_block(const Node* block){
+  env.push();
+  for(auto& ch : block->children) exec(ch.get());
+  env.pop();
+}
+
+void Interpreter::exec_set(const Node* n){
+  // children: [Ident(name), expr]
+  Node* id = n->children[0].get();
+  Node* expr = n->children[1].get();
+  if(id->type != n_id) throw runtime_error("lhs must be an id");
+  Value v = eval(expr);
+  env.define(id->lexeme, v);
+}
+
+void Interpreter::exec_print(const Node* n){
+  Value v = eval(n->children[0].get());
+  *out << v.toString() << endl;  
+}
+
+
+Value Interpreter::eval(const Node* n){
+  switch (n->type) {
+    case n_num:    return Value::Int(stoll(n->lexeme));
+    case n_str:    return Value::String(n->lexeme);
+    case n_id:     return eval_id(n);
+    case n_binary: return eval_binary(n);
+    case n_assign: return eval_assign(n);
+      default: throw std::runtime_error("eval: unsupported node kind");
+  }
+}
+
+Value Interpreter::eval_id(const Node* n){
+  auto v = env.get(n->lexeme);
+  if(!v) throw runtime_error("undefined variable: " + n->lexeme);
+  return *v;
+}
+
+Value Interpreter::eval_assign(const Node* n){
+  // children: [lhs, rhs]; lhs must be Ident
+  const Node* lhs = n->children[0].get();
+  const Node* rhs = n->children[1].get();
+  if(lhs->type != n_id) throw std::runtime_error("assignment lhs must be identifier");
+  Value v = eval(rhs);
+  env.assign(lhs->lexeme, v);
+  return v;
+}
+
+Value Interpreter::eval_binary(const Node* n){
+  Value l = eval(n->children[0].get());
+  Value r = eval(n->children[1].get());
+
+  switch (n->op) {
+    case PLUS: return plus(l, r);
+    case MINUS: return Value::Int(coerceInt(l).i - coerceInt(r).i);
+    case STAR: return Value::Int(coerceInt(l).i * coerceInt(r).i);
+    case SLASH:{
+      auto R = coerceInt(r).i;
+      if(R == 0) throw runtime_error("divison by zero");
+      return Value::Int(coerceInt(l).i / coerceInt(r).i);
+    }
+      default: throw std::runtime_error("unknown binary op: " + n->lexeme);
+  }
+}
+
+Value Interpreter::coerceInt(const Value& v){
+  switch (v.type) {
+    case Int: return v;
+    case Str: return Value::Int(v.s.empty() ? 0 : stoll(v.s));
+    case Bool: return Value::Int(v.b ? 1 : 0);
+    case Nil: return Value::Int(0);
+  }
+  return Value::Int(0);
+}
+
+Value Interpreter::plus(const Value& a, const Value& b){
+  if(a.type == Type::Str || b.type == Type::Str)
+     return Value::String(a.toString() + b.toString());
+   return Value::Int(coerceInt(a).i + coerceInt(b).i);
+}
