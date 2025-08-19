@@ -63,12 +63,17 @@ prec get_prec(TokenType type) {
   case OR:
   case AND:
   case MOD:
+  case BITWISE_OR:
+  case BITWISE_XOR:
+  case BITWISE_LEFT_SHIFT:
+  case BITWISE_RIGHT_SHIFT:
     return COMP;
   case NOT:
   case ADDR:
   case DEREF:
   case INC:
   case DEC:
+  case BITWISE_NOT:
     return PREFIX;
     // case INC:
     // case DEC:
@@ -79,7 +84,7 @@ prec get_prec(TokenType type) {
 }
 
 unique_ptr<Node> Parser::parse() {
-  auto block = make_unique<Node>(n_expr_stmt);
+  auto block = make_unique<Node>(n_block);
   while (!isAtEnd()) {
     auto s = parse_stmt();
     if (s)
@@ -110,7 +115,7 @@ unique_ptr<Node> Parser::parse_stmt() {
   auto expr = parseExpr();
   if (expr) {
     consume(SEMIC, "Expected ';' after expression");
-    auto node = make_unique<Node>(n_block);
+    auto node = make_unique<Node>(n_expr_stmt);
     node->children.push_back(std::move(expr));
     return node;
   }
@@ -154,9 +159,9 @@ unique_ptr<Node> Parser::parse_print() {
 
 unique_ptr<Node> Parser::parse_ala() {
   next();
-  consume(LPRN, "expected '(' after ala\n");
+  // consume(LPRN, "expected '(' after ala\n");
   auto cond = parseExpr();
-  consume(RPRN, "expected ')' after condition in ala\n");
+  // consume(RPRN, "expected ')' after condition in ala\n");
   consume(LCB, "expected '{' after ')' in ala\n");
 
   auto node = make_unique<Node>(n_block);
@@ -177,9 +182,9 @@ unique_ptr<Node> Parser::parse_ala() {
 
 unique_ptr<Node> Parser::parse_if() {
   next();
-  consume(LPRN, "expected '(' after if\n");
+  // consume(LPRN, "expected '(' after if\n");
   auto cond = parseExpr();
-  consume(RPRN, "expected ')' after condition in if\n");
+  // consume(RPRN, "expected ')' after condition in if\n");
   consume(LCB, "expected '{' after ')' in if\n");
 
   auto body = make_unique<Node>(n_block);
@@ -297,7 +302,8 @@ unique_ptr<Node> Parser::nud(const Token &t) {
   case INC:
   case DEC:
   case ADDR:
-  case DEREF: {
+  case DEREF:
+  case BITWISE_NOT: {
     auto node = make_unique<Node>(n_unary);
     node->op = t.type;
     node->lexeme = t.lexeme;
@@ -318,6 +324,7 @@ unique_ptr<Node> Parser::led(const Token &t, unique_ptr<Node> left) {
   case STAR:
   case SLASH:
   case MOD:
+  case ADDR:
   case EQEQ:
   case NOTEQ:
   case AND:
@@ -325,7 +332,11 @@ unique_ptr<Node> Parser::led(const Token &t, unique_ptr<Node> left) {
   case LST:
   case GRT:
   case LQ:
-  case GQ:{
+  case GQ:
+  case BITWISE_OR:
+  case BITWISE_XOR:
+  case BITWISE_LEFT_SHIFT:
+  case BITWISE_RIGHT_SHIFT: {
       auto n = make_unique<Node>(n_binary);
       n->op = t.type;
       n->lexeme = t.lexeme;

@@ -61,6 +61,12 @@ typedef enum {
   NOT,
   MOD,
 
+  BITWISE_OR,
+  BITWISE_XOR,
+  BITWISE_NOT,
+  BITWISE_LEFT_SHIFT,
+  BITWISE_RIGHT_SHIFT,
+
   // unary operators
   ADDR,
   DEREF,

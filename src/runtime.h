@@ -47,13 +47,18 @@ struct Interpreter {
   void exec_block(const Node* block);
   void exec_set(const Node* n);
   void exec_print(const Node* n);
-
+  void exec_ala(const Node* n);
+  void exec_if(const Node* n);
+  void exec_for_loop(const Node* n);
+  
   Value eval(const Node* n);
   Value eval_id(const Node* n);
   Value eval_assign(const Node* n);
   Value eval_binary(const Node* n);
+  Value eval_unary(const Node* n);
+
   Value coerceInt(const Value& v);
   Value plus(const Value& a, const Value& b);
+  bool equals(const Value& a, const Value& b);
   
-  
-};
+  };

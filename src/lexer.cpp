@@ -73,9 +73,11 @@ void Lexer::isWhiteSpace() {
      case '[': return {LB, "[", line, a};
      case ']': return {RB, "]", line, a};
      case '=': if(match('=')) return {EQEQ, "==", line, a}; else return {EQ, "=", line, a};
-     case '>': if(match('=')) return {GQ, ">=", line, a};   else return {GRT, ">", line, a};
-     case '<': if(match('=')) return {LQ, "<=", line, a};   else return {LST, "<", line, a};
-     case '|': if(match('|')) return {OR, "||", line, a};   else break;
+     case '>': if(match('=')) return {GQ, ">=", line, a}; else if(match('>')) return {BITWISE_RIGHT_SHIFT, ">>", line, a};  else return {GRT, ">", line, a};
+     case '<': if(match('=')) return {LQ, "<=", line, a}; else if(match('<')) return {BITWISE_LEFT_SHIFT, "<<", line, a};  else return {LST, "<", line, a};
+     case '|': if(match('|')) return {OR, "||", line, a};   else return {BITWISE_OR, "|", line, a};
+     case '^': return {BITWISE_XOR, "^", line, a};
+     case '~': return {BITWISE_NOT, "~", line, a};
      case '&': if(match('&')) return {AND, "&&", line, a};  else return {ADDR, "&", line, a};
      case '!': return {NOT, "!", line, a};
      case '%': return {MOD, "%", line, a};
