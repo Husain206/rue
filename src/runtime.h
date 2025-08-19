@@ -49,7 +49,7 @@ struct Interpreter {
   void exec_print(const Node* n);
   void exec_ala(const Node* n);
   void exec_if(const Node* n);
-  // void exec_for_loop(const Node* n);
+  void exec_for_loop(const Node* n);
   
   Value eval(const Node* n);
   Value eval_id(const Node* n);
