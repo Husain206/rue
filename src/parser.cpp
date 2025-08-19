@@ -79,7 +79,7 @@ prec get_prec(TokenType type) {
 }
 
 unique_ptr<Node> Parser::parse() {
-  auto block = make_unique<Node>(n_expr_stmt);
+  auto block = make_unique<Node>(n_block);
   while (!isAtEnd()) {
     auto s = parse_stmt();
     if (s)
@@ -110,7 +110,7 @@ unique_ptr<Node> Parser::parse_stmt() {
   auto expr = parseExpr();
   if (expr) {
     consume(SEMIC, "Expected ';' after expression");
-    auto node = make_unique<Node>(n_block);
+    auto node = make_unique<Node>(n_expr_stmt);
     node->children.push_back(std::move(expr));
     return node;
   }
