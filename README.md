@@ -44,7 +44,7 @@ rue
 
 ## Language Syntax
 
-**declatring a variable and printing:**
+**declaring a variable and printing:**
 ```rue.ru
 set num1 := 23;
 set num2 := 3;
@@ -53,7 +53,7 @@ print res; // 69
 res = 6 + "9"; // concatination
 print res; // 69 
 ```
-i got the idea of doing := recently so i hardcoded it so it's only working when you try to declare variable, soon ill fix it :D
+i got the idea of doing **:=** recently so i hardcoded it so it's only working when you try to declare a variable, soon ill fix it :D
 print print with a new line :D, i mean yeah i should have named it println but whatever eventually ill swtich to the standard lib so whatever :D
 
 ### control flow:
@@ -76,7 +76,7 @@ ala(true) {
 ```
 ```rue.ru
 for(set i := 0; i < 10; ++i){
-  if(i & 2 == 0) {  // ( !(i & 1) ) also works 
+  if(i % 2 == 0) {  // ( !(i & 1) ) also works 
      print "even";
   } else {
       print "odd";
