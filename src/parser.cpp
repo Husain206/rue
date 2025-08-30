@@ -116,8 +116,8 @@ unique_ptr<Node> Parser::parse_stmt() {
     return parse_fn();
   } else if(check(RETURN)) {
     return parse_return();
-  } else if(check(INPUT)){
-    return parse_input();
+  // } else if(check(INPUT)){
+  //   return parse_input();
   } else {
 
   auto expr = parseExpr();
