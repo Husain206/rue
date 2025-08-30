@@ -116,8 +116,8 @@ unique_ptr<Node> Parser::parse_stmt() {
     return parse_fn();
   } else if(check(RETURN)) {
     return parse_return();
-  // } else if(check(INPUT)){
-  //   return parse_input();
+  } else if(check(INPUT)){
+    return parse_input();
   } else {
 
   auto expr = parseExpr();
@@ -139,18 +139,23 @@ unique_ptr<Node> Parser::parse_set() {
               << peek().col << "\n";
     return nullptr;
   }
-  consume(EQ, "Expected ':=' after identifier in set\n");
-  auto value = parseExpr();
-  consume(SEMIC, "Expected ';' at the end of set\n");
 
-  auto node = make_unique<Node>(n_set);
-  auto ident = make_unique<Node>(n_id);
-  ident->lexeme = name.lexeme;
-  node->children.push_back(std::move(ident));
-  node->children.push_back(std::move(value));
-
-  return node;
+     auto node = make_unique<Node>(n_set);
+     auto ident = make_unique<Node>(n_id);
+     ident->lexeme = name.lexeme;
+     node->children.push_back(std::move(ident));
+    
+  if(check(EQ)){
+     consume(EQ, "Expected ':=' after identifier in set\n");
+     auto value = parseExpr();
+     node->children.push_back(std::move(value));
+  }
+  consume(SEMIC, "expected ';' at the end of set");
+  
+    return node;
 }
+
+
 
 unique_ptr<Node> Parser::parse_print() {
   next();
@@ -164,15 +169,23 @@ unique_ptr<Node> Parser::parse_print() {
   return node;
 }
 
-// unique_ptr<Node> Parser::parse_input(){
-//   next();
-//   string x;
-//   cin >> x;
-//   consume(SEMIC, "Expected ';' at the end of print\n");
-//   auto node = make_unique<Node>(n_input);
-//   node->lexeme = x;
-//   return node;
-// }
+unique_ptr<Node> Parser::parse_input(){
+  next();
+  Token name = next();
+  if(name.type != IDENT) {
+        std::cerr << "Expected identifier after 'input' at "
+                  << peek().line << ":" << peek().col << "\n";
+        return nullptr;
+    }
+
+    auto node = make_unique<Node>(n_input);
+    auto ident = make_unique<Node>(n_id);
+    ident->lexeme = name.lexeme;
+    node->children.push_back(std::move(ident));
+
+    consume(SEMIC, "Expected ';' at the end of print\n");
+    return node;
+}
 
 
 unique_ptr<Node> Parser::parse_ala() {
@@ -443,7 +456,7 @@ unique_ptr<Node> Parser::led(const Token &t, unique_ptr<Node> left) {
       consume(RPRN, "Expected ')' after arguments");
       return call;
     }
-
+ 
    default:
      std::cerr << "Unhandled infix operator: " << t.lexeme << "\n";
      return left;

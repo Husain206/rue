@@ -30,7 +30,7 @@ unique_ptr<Node> parse();
 unique_ptr<Node> parse_stmt();
 unique_ptr<Node> parse_set();
 unique_ptr<Node> parse_print();
-// unique_ptr<Node> parse_input();
+unique_ptr<Node> parse_input();
 unique_ptr<Node> parse_ala();
 unique_ptr<Node> parse_if();
 unique_ptr<Node> parse_for_loop();

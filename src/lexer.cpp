@@ -150,7 +150,7 @@ Token Lexer::setKeyword(str iden) {
   static const std::unordered_map<str, TokenType> keywords = {
     {"set", SET},
     {"print", PRINT},
-    // {"input", INPUT},
+    {"input", INPUT},
     {"ala", ALA},
     {"if", IF},
     {"else", ELSE},

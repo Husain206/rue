@@ -15,7 +15,7 @@ typedef enum {
   IF,
   ELSE,
   PRINT,
-  // INPUT,
+  INPUT,
   SET,
   FN,
   RETURN,
