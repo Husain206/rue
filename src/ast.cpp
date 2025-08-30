@@ -36,13 +36,27 @@ void printAST(const Node *node, int indent){
       std::cout << "PrintStmt\n";
       for (auto &c : node->children) printAST(c.get(), indent + 1);
       break;
+    // case n_input:
+    //   std::cout << "InputStmt\n";
+    //   for (auto &c : node->children) printAST(c.get(), indent + 1);
+    //   break;
     case n_ala:
       std::cout << "alaStmt\n";
-      for(auto &c : node->children) printAST(c.get(), indent + 1);
+      printIndent(indent+1);
+      std::cout << "Cond\n";
+      for(auto &c : node->children) printAST(c.get(), indent + 2);
+      break;
+    case n_break:
+      std::cout << "BreakStmt\n";
+      break;
+    case n_continue:
+      std::cout << "ContinueStmt\n";
       break;
     case n_if:
       std::cout << "IfStmt\n";
-      for (auto &c : node->children) printAST(c.get(), indent + 1);
+      printIndent(indent+1);
+      std::cout << "Cond\n";
+      for (auto &c : node->children) printAST(c.get(), indent + 2);
       break;
     case n_else:
       std::cout << "Else\n";
@@ -50,7 +64,9 @@ void printAST(const Node *node, int indent){
       break;
     case n_for_loop:
       std::cout << "ForStmt\n";
-      for (auto &c : node->children) printAST(c.get(), indent + 1);
+      printIndent(indent+1);
+      std::cout << "Cond\n";
+      for (auto &c : node->children) printAST(c.get(), indent + 2);
       break;
     case n_block:
       std::cout << "Block\n";
@@ -58,6 +74,18 @@ void printAST(const Node *node, int indent){
       break;
     case n_expr_stmt:
       std::cout << "ExprStmt\n";
+      for (auto &c : node->children) printAST(c.get(), indent + 1);
+      break;
+    case n_fn_dec:
+      std::cout << "FnDecl(" << node->lexeme << ")\n";
+      for (auto &c : node->children) printAST(c.get(), indent + 1);
+      break;
+    case n_return:
+      std::cout << "ReturnStmt\n";
+      if (!node->children.empty()) printAST(node->children[0].get(), indent + 1);
+      break;
+    case n_fn_call:
+      std::cout << "Call(" << node->lexeme << ")\n";
       for (auto &c : node->children) printAST(c.get(), indent + 1);
       break;
   }

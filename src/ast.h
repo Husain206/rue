@@ -16,12 +16,18 @@ typedef enum {
       n_assign,
       n_set,
       n_print,
+      // n_input,
       n_ala,
       n_if,
       n_else,
       n_for_loop,
       n_block,
       n_expr_stmt,
+      n_break,
+      n_continue,
+      n_fn_dec,
+      n_fn_call,
+      n_return,
 } NodeType;
 
 
