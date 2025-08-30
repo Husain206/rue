@@ -1,10 +1,10 @@
 // define variables
-set x = 5;
-set y = 10;
+set x := 5;
+set y := 10;
 
 
-set msg = "Counter: ";
-set flag = true;
+set msg := "Counter: ";
+set flag := true;
 
 // printing(for now)
 print "Initial x = " + x;
@@ -28,7 +28,7 @@ ala x < 8 {
 print " ";
 
 // for-loop, logical and comparision operators
-for(set i = 0; i <= 10; ++i){
+for(set i := 0; i <= 10; ++i){
     if(i % 2 == 0){
         print i +  ": even";
     } else {
@@ -38,7 +38,7 @@ for(set i = 0; i <= 10; ++i){
 
 print " ";
 
-for(set i = 0; i <= 10; ++i){
+for(set i := 0; i <= 10; ++i){
     if(!(i & 1)){
         print i +  ": even";
     } else {
@@ -48,8 +48,8 @@ for(set i = 0; i <= 10; ++i){
 
 print " ";
 
-set sum = x + y;
-set ok = sum > 20;
+set sum := x + y;
+set ok := sum > 20;
 print "sum = " + sum;
 print "ok? " + ok;
 
