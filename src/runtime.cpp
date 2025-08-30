@@ -1,89 +1,18 @@
 #include "runtime.h"
 #include "ast.h"
 #include "lexer.h"
+#include "sym_table.h"
+#include "dy_types.h"
+#include <iostream>
+#include <vector>
 
-Value Value::Int(long long v){
-  Value x;
-  x.type = Type::Int;
-  x.i = v;
-  return x;
-}
-
-Value Value::String(string v){
-  Value x;
-  x.type = Type::Str;
-  x.s = v;
-  return x;
-}
-
-Value Value::Bool(bool v){
-  Value x;
-  x.type = Type::Bool;
-  x.b = v;
-  return x;
-}
-
-Value Value::Nil(){
-  return Value{};
-}
-
-string Value::toString() const {
-  switch (type) {
-    case Type::Int: return std::to_string(i);
-    case Type::Str: return s;
-    case Type::Bool: return b ? "true" : "false";
-    case Type::Nil: return "nil";
-  }
-  return "nil";
-}
-
-bool Value::truthy() const {
-  switch(type){
-    case Type::Int: return i != 0;
-    case Type::Str: return !s.empty();
-    case Type::Bool: return b;
-    case Type::Nil: return false;
-  }
-  return false;
-}
-
-void Env::push(){
-  scopes.emplace_back();
-}
-
-void Env::pop(){
-  if(!scopes.empty()) scopes.pop_back();
-}
-
-bool Env::define(const string& name, const Value& v){
-  if(scopes.empty()) scopes.emplace_back();
-   scopes.back()[name] = v;
-   return true;
-}
-
-bool Env::assign(const string& name, const Value& v){
-  for(auto it = scopes.rbegin(); it != scopes.rend(); it++){
-    auto f = it->find(name);
-    if(f != it->end()) { f->second = v; return true; }
-  }
-  return define(name, v);
-}
-
-optional<Value> Env::get(const string& name) const {
-    for(auto it = scopes.rbegin(); it != scopes.rend(); it++){
-      auto f = it->find(name);
-      if(f != it->end()) { return f->second; }
-    }
-    return nullopt;
-}
 
 void Interpreter::run(const Node* root){
   if(!root || root->type != n_block) throw runtime_error("program must be a block");
-  env.push();
-
+  
     // define built-ins
-    env.define("true",  Value::Int(1));
-    env.define("false", Value::Int(0));
+    env.define("true",  Value::Bool(true));
+    env.define("false", Value::Bool(false));
   exec_block(root);
 }
 
@@ -99,6 +28,10 @@ void Interpreter::exec(const Node* n){
     case n_else:        exec_block(n); break;
     case n_for_loop:    exec_for_loop(n); break;
     case n_block:       exec_block(n); break;
+    case n_fn_dec:      exec_fn(n); break;
+    case n_return:      exec_return(n); break;
+    // case n_input:       exec_input(n); break;
+    
 
       default: throw runtime_error("exec: unsupported node " + n->lexeme);
   }
@@ -121,7 +54,7 @@ void Interpreter::exec_set(const Node* n){
 
 void Interpreter::exec_print(const Node* n){
   Value v = eval(n->children[0].get());
-  *out << v.toString() << endl;  
+  cout << v.toString() << endl;  
 }
 
 void Interpreter::exec_ala(const Node* n){
@@ -158,6 +91,25 @@ void Interpreter::exec_for_loop(const Node* n){
 }
 
 
+void Interpreter::exec_fn(const Node* n){
+  // children: [params..., body]
+  vector<string> ps;
+  for(size_t i{0}; i < n->children.size()-1; i++){
+    ps.push_back(n->children[i]->lexeme);
+  }
+  const Node* body = n->children.back().get();
+  Value fn = Value::Function(ps, body);
+  env.define(n->lexeme, fn); 
+}
+
+void Interpreter::exec_return(const Node* n){
+  Value v = Value::Nil();
+  if(!n->children.empty())
+    v = eval(n->children[0].get());
+  throw ReturnException(v);
+}
+
+
 Value Interpreter::eval(const Node* n){
   switch (n->type) {
     case n_num:    return Value::Int(stoll(n->lexeme));
@@ -166,6 +118,7 @@ Value Interpreter::eval(const Node* n){
     case n_binary: return eval_binary(n);
     case n_unary:  return eval_unary(n);
     case n_assign: return eval_assign(n);
+    case n_fn_call: return eval_call(n);
 
       default: throw std::runtime_error("eval: unsupported node kind");
   }
@@ -256,28 +209,57 @@ Value Interpreter::eval_binary(const Node* n){
   }
 }
 
+Value Interpreter::eval_call(const Node* n){
+    const Node* calleeNode = n->children[0].get();
+    Value callee = eval(calleeNode);
+
+    if(callee.type != Type::Func)
+        throw runtime_error("not a function: " + calleeNode->lexeme);
+
+    if(n->children.size()-1 != callee.params.size())
+        throw runtime_error("argument count mismatch for function " + calleeNode->lexeme);
+
+    env.push();
+    for(size_t i=0; i<callee.params.size(); i++){
+        Value arg = eval(n->children[i+1].get());
+        env.define(callee.params[i], arg);
+    }
+
+    Value ret = Value::Nil();
+    try {
+        exec(callee.body);
+    } catch (ReturnException& re) {
+        ret = re.value;
+    }
+    env.pop();
+    return ret;
+}
+
+
 Value Interpreter::coerceInt(const Value& v){
   switch (v.type) {
     case Int: return v;
     case Str: return Value::Int(v.s.empty() ? 0 : stoll(v.s));
     case Bool: return Value::Int(v.b ? 1 : 0);
     case Nil: return Value::Int(0);
+        default: throw runtime_error("unknown coerce statement");
+
   }
   return Value::Int(0);
 }
 
 Value Interpreter::plus(const Value& a, const Value& b){
-  if(a.type == Type::Str || b.type == Type::Str)
+  if(a.type == Str || b.type == Str)
      return Value::String(a.toString() + b.toString());
    return Value::Int(coerceInt(a).i + coerceInt(b).i);
 }
 
 bool Interpreter::equals(const Value& a, const Value& b){
-   if(a.type == Type::Str && b.type == Type::Str)
+   if(a.type == Str && b.type == Str)
      return a.toString() == b.toString();
-   if(a.type == Type::Int && b.type == Type::Int)
+   if(a.type == Int && b.type == Int)
      return coerceInt(a).i == coerceInt(b).i;
-   if(a.type == Type::Bool && b.type == Type::Bool)
+   if(a.type == Bool && b.type == Bool)
      return a.truthy() == b.truthy();
-  return true;
+  return false;
 }
