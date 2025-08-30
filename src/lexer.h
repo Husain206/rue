@@ -15,10 +15,13 @@ typedef enum {
   IF,
   ELSE,
   PRINT,
+  // INPUT,
   SET,
   FN,
   RETURN,
   NALL,
+  CONTINUE,
+  BREAK,
 
   // IDent
   IDENT,
@@ -44,6 +47,7 @@ typedef enum {
   SEMIC,
   COMMA,
   DOT,
+  COLON,
   DQ,
   SQ,
 
