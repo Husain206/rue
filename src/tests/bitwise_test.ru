@@ -1,5 +1,5 @@
-set a = 5;
-set b = 9;
+set a := 5;
+set b := 9;
 
 // it outputs the result in decimal(for now) instead of binary, but the value is correct :D
 

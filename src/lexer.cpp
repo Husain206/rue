@@ -72,7 +72,7 @@ void Lexer::isWhiteSpace() {
      case ')': return {RPRN, ")", line, a};
      case '[': return {LB, "[", line, a};
      case ']': return {RB, "]", line, a};
-     case '=': if(match('=')) return {EQEQ, "==", line, a}; else return {EQ, "=", line, a};
+     case '=': if(match('=')) return {EQEQ, "==", line, a}; else return {};
      case '>': if(match('=')) return {GQ, ">=", line, a}; else if(match('>')) return {BITWISE_RIGHT_SHIFT, ">>", line, a};  else return {GRT, ">", line, a};
      case '<': if(match('=')) return {LQ, "<=", line, a}; else if(match('<')) return {BITWISE_LEFT_SHIFT, "<<", line, a};  else return {LST, "<", line, a};
      case '|': if(match('|')) return {OR, "||", line, a};   else return {BITWISE_OR, "|", line, a};
@@ -81,6 +81,7 @@ void Lexer::isWhiteSpace() {
      case '&': if(match('&')) return {AND, "&&", line, a};  else return {ADDR, "&", line, a};
      case '!': return {NOT, "!", line, a};
      case '%': return {MOD, "%", line, a};
+     case ':': if(match('=')) return {EQ, ":=", line, a}; else return {COLON, ":", line, a};
 
      case '"': return toString();
      case '\'': return toAscii();
@@ -149,13 +150,16 @@ Token Lexer::setKeyword(str iden) {
   static const std::unordered_map<str, TokenType> keywords = {
     {"set", SET},
     {"print", PRINT},
+    {"input", INPUT},
     {"ala", ALA},
     {"if", IF},
     {"else", ELSE},
     {"for", FOR},
     {"fn", FN},
     {"return", RETURN},
-    {"null", NALL}
+    {"null", NALL},
+    {"continue", CONTINUE},
+    {"break", BREAK}
   };
 
   auto it = keywords.find(iden);
