@@ -36,10 +36,10 @@ void printAST(const Node *node, int indent){
       std::cout << "PrintStmt\n";
       for (auto &c : node->children) printAST(c.get(), indent + 1);
       break;
-    // case n_input:
-    //   std::cout << "InputStmt\n";
-    //   for (auto &c : node->children) printAST(c.get(), indent + 1);
-    //   break;
+    case n_input:
+      std::cout << "InputStmt\n";
+      for (auto &c : node->children) printAST(c.get(), indent + 1);
+      break;
     case n_ala:
       std::cout << "alaStmt\n";
       printIndent(indent+1);

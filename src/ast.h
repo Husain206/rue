@@ -16,7 +16,7 @@ typedef enum {
       n_assign,
       n_set,
       n_print,
-      // n_input,
+      n_input,
       n_ala,
       n_if,
       n_else,

@@ -4,6 +4,7 @@
 #include "sym_table.h"
 #include "dy_types.h"
 #include <iostream>
+#include <string>
 #include <vector>
 
 
@@ -30,7 +31,7 @@ void Interpreter::exec(const Node* n){
     case n_block:       exec_block(n); break;
     case n_fn_dec:      exec_fn(n); break;
     case n_return:      exec_return(n); break;
-    // case n_input:       exec_input(n); break;
+    case n_input:       exec_input(n); break;
     
 
       default: throw runtime_error("exec: unsupported node " + n->lexeme);
@@ -46,9 +47,12 @@ void Interpreter::exec_block(const Node* block){
 void Interpreter::exec_set(const Node* n){
   // children: [Ident(name), expr]
   const Node* id = n->children[0].get();
-  const Node* expr = n->children[1].get();
-  if(id->type != n_id) throw runtime_error("lhs must be an id");
-  Value v = eval(expr);
+    if(id->type != n_id) throw runtime_error("lhs must be an id");
+    
+  Value v = Value::Nil();
+  if(n->children.size() > 1 && n->children[1]){
+    v = eval(n->children[1].get());
+  }
   env.define(id->lexeme, v);
 }
 
@@ -56,6 +60,19 @@ void Interpreter::exec_print(const Node* n){
   Value v = eval(n->children[0].get());
   cout << v.toString() << endl;  
 }
+
+void Interpreter::exec_input(const Node* n){
+  // children: [ident]
+  const Node* id = n->children[0].get();
+  if(id->type != n_id) throw runtime_error("input target must be an identifier");
+  string line;
+  if(!getline(cin, line)){
+    throw runtime_error("failed to read input");
+  }
+  Value v = Value::String(line);
+  env.define(id->lexeme, v);
+}
+
 
 void Interpreter::exec_ala(const Node* n){
   // children: [cond, body]
@@ -134,10 +151,13 @@ Value Interpreter::eval_assign(const Node* n){
   // children: [lhs, rhs]; lhs must be Ident
   const Node* lhs = n->children[0].get();
   const Node* rhs = n->children[1].get();
-  if(lhs->type != n_id) throw std::runtime_error("assignment lhs must be identifier");
   Value v = eval(rhs);
+
+  if(lhs->type == n_id) {
   env.assign(lhs->lexeme, v);
   return v;
+  }
+   throw runtime_error("invalid assignment target");
 }
 
 Value Interpreter::eval_unary(const Node* n){
@@ -234,7 +254,6 @@ Value Interpreter::eval_call(const Node* n){
     env.pop();
     return ret;
 }
-
 
 Value Interpreter::coerceInt(const Value& v){
   switch (v.type) {

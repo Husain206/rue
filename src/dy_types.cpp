@@ -1,5 +1,4 @@
 #include "dy_types.h"
-#include <stdexcept>
 
 Value Value::Int(long long v){
   Value x;
@@ -51,7 +50,7 @@ bool Value::truthy() const {
     case Type::Str: return !s.empty();
     case Type::Bool: return b;
     case Type::Nil: return false;
-      default: throw runtime_error("unknown turhty statement");
+      default: {};
   }
   return false;
 }
