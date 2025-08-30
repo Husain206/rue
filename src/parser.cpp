@@ -78,6 +78,8 @@ prec get_prec(TokenType type) {
     // case INC:
     // case DEC:
     //   return POSTFIX;
+  case LPRN:
+    return CALL;
   default:
     return NONE;
   }
@@ -106,20 +108,26 @@ unique_ptr<Node> Parser::parse_stmt() {
     return parse_if();
   } else if (check(FOR)) {
     return parse_for_loop();
-    // } else if(check(RETURN)){
-    //   parse_return();
-    // } else if(check(FN)){
-    //   parse_fn();
-  }
+  } else if(check(BREAK)){
+    return parse_break();
+  } else if(check(CONTINUE)){
+    return parse_continue();
+  } else if(check(FN)){
+    return parse_fn();
+  } else if(check(RETURN)) {
+    return parse_return();
+  } else if(check(INPUT)){
+    return parse_input();
+  } else {
 
   auto expr = parseExpr();
   if (expr) {
-    consume(SEMIC, "Expected ';' after expression");
+    consume(SEMIC, "Expected ';' after expression or unknown statement\n");
     auto node = make_unique<Node>(n_expr_stmt);
     node->children.push_back(std::move(expr));
     return node;
+    }
   }
-
   return nullptr;
 }
 
@@ -131,8 +139,7 @@ unique_ptr<Node> Parser::parse_set() {
               << peek().col << "\n";
     return nullptr;
   }
-
-  consume(EQ, "Expected '=' after identifier in set\n");
+  consume(EQ, "Expected ':=' after identifier in set\n");
   auto value = parseExpr();
   consume(SEMIC, "Expected ';' at the end of set\n");
 
@@ -157,18 +164,29 @@ unique_ptr<Node> Parser::parse_print() {
   return node;
 }
 
+// unique_ptr<Node> Parser::parse_input(){
+//   next();
+//   string x;
+//   cin >> x;
+//   consume(SEMIC, "Expected ';' at the end of print\n");
+//   auto node = make_unique<Node>(n_input);
+//   node->lexeme = x;
+//   return node;
+// }
+
+
 unique_ptr<Node> Parser::parse_ala() {
   next();
-  // consume(LPRN, "expected '(' after ala\n");
+  if(check(LPRN)) consume(LPRN, "expected '(' after ala\n");
   auto cond = parseExpr();
-  // consume(RPRN, "expected ')' after condition in ala\n");
+  if(check(RPRN)) consume(RPRN, "expected ')' after condition in ala\n");
   consume(LCB, "expected '{' after ')' in ala\n");
 
-  auto node = make_unique<Node>(n_block);
+  auto body = make_unique<Node>(n_block);
   while (!check(RCB) && !isAtEnd()) {
     auto s = parse_stmt();
     if (s)
-      node->children.push_back(std::move(s));
+      body->children.push_back(std::move(s));
     else
       break;
   }
@@ -176,15 +194,15 @@ unique_ptr<Node> Parser::parse_ala() {
 
   auto wrapper = make_unique<Node>(n_ala);
   wrapper->children.push_back(std::move(cond));
-  wrapper->children.push_back(std::move(node));
+  wrapper->children.push_back(std::move(body));
   return wrapper;
 }
 
 unique_ptr<Node> Parser::parse_if() {
   next();
-  // consume(LPRN, "expected '(' after if\n");
+  if(check(LPRN)) consume(LPRN, "expected '(' after if\n");
   auto cond = parseExpr();
-  // consume(RPRN, "expected ')' after condition in if\n");
+  if(check(RPRN)) consume(RPRN, "expected ')' after condition in if\n");
   consume(LCB, "expected '{' after ')' in if\n");
 
   auto body = make_unique<Node>(n_block);
@@ -219,7 +237,7 @@ unique_ptr<Node> Parser::parse_if() {
   return node;
 }
 
-// for (set i = 0; i < 10; i++)
+// for (set i = 0; i < 10; ++i)
 
 unique_ptr<Node> Parser::parse_for_loop(){
     next();
@@ -257,6 +275,67 @@ unique_ptr<Node> Parser::parse_for_loop(){
 
     return node;
 }
+
+unique_ptr<Node> Parser::parse_break(){
+  next();
+  consume(SEMIC, "expected ';' after break");
+  return make_unique<Node>(n_break);
+}
+
+unique_ptr<Node> Parser::parse_continue(){
+  next();
+  consume(SEMIC, "expected ';' after break");
+  return make_unique<Node>(n_continue);
+}
+
+std::unique_ptr<Node> Parser::parse_fn() {
+  next(); // consume 'fn'
+  Token name = next();
+  if (name.type != IDENT) throw std::runtime_error("Expected function name");
+
+  auto node = std::make_unique<Node>(n_fn_dec);
+  node->lexeme = name.lexeme; // function name
+
+  consume(LPRN, "Expected '(' after fn name");
+
+  // Parse parameters
+  if (!check(RPRN)) {
+    do {
+      Token param = next();
+      if (param.type != IDENT)
+        throw std::runtime_error("Expected parameter name");
+      auto pnode = std::make_unique<Node>(n_id);
+      pnode->lexeme = param.lexeme;
+      node->children.push_back(std::move(pnode)); // store parameter as child
+    } while (match(COMMA));
+  }
+  consume(RPRN, "Expected ')' after params");
+
+  // Parse body (a block)
+  consume(LCB, "expected '{' to start function body");
+  auto body = std::make_unique<Node>(n_block);
+  while (!check(RCB) && !isAtEnd()) {
+    auto s = parse_stmt();
+    if (s) body->children.push_back(std::move(s));
+    else break;
+  }
+  consume(RCB, "expected '}' at the end of function body");
+
+  node->children.push_back(std::move(body));
+  return node;
+}
+
+
+unique_ptr<Node> Parser::parse_return() {
+  next();
+  auto node = std::make_unique<Node>(n_return);
+  if (!check(SEMIC)) {
+    node->children.push_back(parseExpr());
+  }
+  consume(SEMIC, "Expected ';' after return");
+  return node;
+}
+
 
 unique_ptr<Node> Parser::parseExpr(int rbp) {
   Token t = next();
@@ -352,6 +431,19 @@ unique_ptr<Node> Parser::led(const Token &t, unique_ptr<Node> left) {
          n->children.push_back(parseExpr(lbp(t) - 1));
          return n;
        }
+  case LPRN: {
+      auto call = std::make_unique<Node>(n_fn_call);
+      call->children.push_back(std::move(left)); // callee node (identifier)
+
+      if (!check(RPRN)) {
+        do {
+          call->children.push_back(parseExpr());
+        } while (match(COMMA));
+      }
+      consume(RPRN, "Expected ')' after arguments");
+      return call;
+    }
+
    default:
      std::cerr << "Unhandled infix operator: " << t.lexeme << "\n";
      return left;

@@ -10,10 +10,11 @@
 enum prec {
   NONE,
   ASS,
+  COMP,
   SUM,
   PRODUCT,
-  COMP,
   PREFIX,
+  CALL,
   POSTFIX,
 };
 
@@ -29,9 +30,14 @@ unique_ptr<Node> parse();
 unique_ptr<Node> parse_stmt();
 unique_ptr<Node> parse_set();
 unique_ptr<Node> parse_print();
+// unique_ptr<Node> parse_input();
 unique_ptr<Node> parse_ala();
 unique_ptr<Node> parse_if();
 unique_ptr<Node> parse_for_loop();
+unique_ptr<Node> parse_break();
+unique_ptr<Node> parse_continue();
+unique_ptr<Node> parse_return();
+unique_ptr<Node> parse_fn();
 // void parse_return();
 // std::vector<Token> parse_params();
 // void parse_fn();
