@@ -1,20 +1,24 @@
-#include "ast.h"
+#include "../frontend/lexer.h"
+#include "../frontend/parser.h"
+#include "../frontend/ast.h"
 #include "runtime.h"
-#include "lexer.h"
-#include "parser.h"
-#include <exception>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
 
-
 int main(int argc, char *argv[]) {
 
-  if (argc != 2) {
+  if (argc < 2) {
     std::cerr << "usage: [" << argv[0] << "] [file.ru]\n";
     return 1;
   }
+  std::string fname = argv[1];
+if (fname.size() < 3 || fname.substr(fname.size() - 3) != ".ru") {
+    std::cerr << "file extension must end with '.ru'\n";
+    return 1;
+}
+
   const std::string filename = argv[1];
   std::ifstream file(filename);
 
@@ -40,6 +44,8 @@ int main(int argc, char *argv[]) {
     cerr << "runtime error: " << e.what() << endl; 
   }
   
+  
   return 0;
 }
+
 

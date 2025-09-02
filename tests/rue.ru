@@ -55,4 +55,3 @@ print "ok? " + ok;
 
 ++x;
 print "x after ++x: " + x;
-
