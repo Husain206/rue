@@ -19,33 +19,6 @@ if (fname.size() < 3 || fname.substr(fname.size() - 3) != ".ru") {
     return 1;
 }
 
-
-
-//   if (argc < 2) {
-//     Lexer lexer;
-//     Parser parser;
-//     Interpreter inter;
-//     std::string input;
-//     while (true) {
-//         std::cout << ">> ";
-//         if (!std::getline(std::cin, input) || input == "exit") break;
-//         auto tokens = lexer.tokenize(input);
-//         parser.tokens = tokens;
-//         auto expr = parser.parseExpr();
-//         if (!expr) continue;
-//         auto node = std::make_unique<Node>(n_expr_stmt);
-//         node->children.push_back(std::move(expr));
-//         printAST(node.get());
-//         // try {
-//         //     inter.eval(expr.get());
-//         // } catch (const std::exception& e) {
-//         //     std::cerr << "runtime error: " << e.what() << std::endl;
-//         // }
-//     }
-//     return 0;
-// }
-
-    
   const std::string filename = argv[1];
   std::ifstream file(filename);
 
