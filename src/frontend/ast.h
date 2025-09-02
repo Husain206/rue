@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lexer.h"
+#include "../frontend/lexer.h"
 #include <memory>
 #include <string>
 #include <vector>

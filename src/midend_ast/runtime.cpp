@@ -1,6 +1,4 @@
 #include "runtime.h"
-#include "ast.h"
-#include "lexer.h"
 #include "sym_table.h"
 #include "dy_types.h"
 #include <iostream>
