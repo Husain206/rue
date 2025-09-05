@@ -3,7 +3,7 @@ CXXFLAGS = -Wall -Wextra -Wpedantic
 
 # Sources
 AST_SRC = ./src/frontend/*.cpp ./src/midend_ast/*.cpp
-IR_SRC  = ./src/frontend/*.cpp ./src/backend_ir/*.cpp
+IR_SRC  = ./src/frontend/*.cpp ./src/midend_ir/*.cpp
 
 # Output binaries
 AST_BIN = rue_runtime_ast
