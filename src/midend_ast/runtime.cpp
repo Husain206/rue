@@ -5,6 +5,12 @@
 #include <string>
 #include <vector>
 
+Value brint(vector<Value> args) {
+  for(auto arg : args)
+    cout << arg.toString() << " ";
+  cout << endl;
+  return Value::Nil();
+}
 
 void Interpreter::run(const Node* root){
   if(!root || root->type != n_block) throw runtime_error("program must be a block");
@@ -12,6 +18,7 @@ void Interpreter::run(const Node* root){
     // define built-ins
     env.define("true",  Value::Bool(true));
     env.define("false", Value::Bool(false));
+    env.define("brint", Value::NativeFunction(brint));
   exec_block(root);
 }
 
