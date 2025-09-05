@@ -231,6 +231,13 @@ Value Interpreter::eval_call(const Node* n){
     const Node* calleeNode = n->children[0].get();
     Value callee = eval(calleeNode);
 
+    if (callee.type == Type::NativeFunc) {
+      vector<Value> args;
+      for(size_t i=1; i < n->children.size(); i++)
+        args.push_back(eval(n->children[i].get()));
+      return callee.cpp_func(args);
+    }
+
     if(callee.type != Type::Func)
         throw runtime_error("not a function: " + calleeNode->lexeme);
 
