@@ -123,23 +123,25 @@ Token Lexer::toAscii() {
 Token Lexer::toString() {
   str string;
   while (peek() != '"' && !isAtEnd()) {
-    if (peek() == '\\') {
-     switch (next()) {
-     case 'n':  string += '\n'; break;
-     case '0':  string += '\0'; break;
-     case 't':  string += '\t'; break;
-     case 'r':  string += '\r'; break;
-     case '\\': string += '\\'; break;
-     case 'b':  string += '\b'; break;
-     case 'f':  string += '\f'; break;
-     case '"':  string += '"';  break;
-     default:
-      string += '\\'; 
-      string += next(); 
-     error("unknown escape sequence \\" + string);
-     }
-    } else string += next();
-  }
+if (peek() == '\\') {
+    next(); 
+    char esc = next(); 
+    switch (esc) {
+        case 'n':  string += '\n'; break;
+        case '0':  string += '\0'; break;
+        case 't':  string += '\t'; break;
+        case 'r':  string += '\r'; break;
+        case '\\': string += '\\'; break;
+        case 'b':  string += '\b'; break;
+        case 'f':  string += '\f'; break;
+        case '"':  string += '"';  break;
+        default:
+            error(std::string("unknown escape sequence \\") + esc);
+    }
+} else 
+    string += next();
+}
+    
 
   if (isAtEnd()) error("Unterminated string.\n");
   next();
@@ -174,8 +176,8 @@ Token Lexer::ID() {
   if(std::isdigit(peekPre())){
     error("cannot start an identifier with a number\n");
     }
-    if (std::isalpha(peek())) {
-    while (isalnum(peek())) {
+    if (std::isalpha(peek()) || peek() == '_') {
+    while (isalnum(peek()) || peek() == '_') {
       iden += next();
     }  
   }
@@ -203,7 +205,7 @@ std::vector<Token> Lexer::tokenize(const str &source) {
     
     
     isWhiteSpace();
-    if (std::isalpha(peek())) {
+    if (std::isalpha(peek()) || peek() == '_') {
       tokens.push_back(ID());
     } else if (isdigit(peek()) || peek() == '.') {
       tokens.push_back(Number());
