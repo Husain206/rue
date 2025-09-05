@@ -5,6 +5,12 @@
 #include <string>
 #include <vector>
 
+Value brint(vector<Value> args) {
+  for(auto arg : args)
+    cout << arg.toString() << " ";
+  cout << endl;
+  return Value::Nil();
+}
 
 void Interpreter::run(const Node* root){
   if(!root || root->type != n_block) throw runtime_error("program must be a block");
@@ -12,6 +18,7 @@ void Interpreter::run(const Node* root){
     // define built-ins
     env.define("true",  Value::Bool(true));
     env.define("false", Value::Bool(false));
+    env.define("brint", Value::NativeFunction(brint));
   exec_block(root);
 }
 
@@ -230,6 +237,13 @@ Value Interpreter::eval_binary(const Node* n){
 Value Interpreter::eval_call(const Node* n){
     const Node* calleeNode = n->children[0].get();
     Value callee = eval(calleeNode);
+
+    if (callee.type == Type::NativeFunc) {
+      vector<Value> args;
+      for(size_t i=1; i < n->children.size(); i++)
+        args.push_back(eval(n->children[i].get()));
+      return callee.cpp_func(args);
+    }
 
     if(callee.type != Type::Func)
         throw runtime_error("not a function: " + calleeNode->lexeme);
