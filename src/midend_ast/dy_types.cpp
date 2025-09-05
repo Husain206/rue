@@ -33,6 +33,13 @@ Value Value::Function(vector<string> ps, const Node *body){
   return x;
 }
 
+Value Value::NativeFunction(CppFunc func) {
+  Value x;
+  x.type = Type::NativeFunc;
+  x.cpp_func = func;
+  return x;
+}
+
 string Value::toString() const {
   switch (type) {
     case Type::Int: return std::to_string(i);
@@ -40,6 +47,7 @@ string Value::toString() const {
     case Type::Bool: return b ? "true" : "false";
     case Type::Nil: return "nil";
     case Type::Func: return "<fn>";
+    case Type::NativeFunc: return "<native fn>";
   }
   return "nil";
 }
