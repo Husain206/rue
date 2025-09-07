@@ -1,7 +1,7 @@
-
 #include "parser.h"
 #include "ast.h"
 #include "lexer.h"
+#include <cctype>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -60,7 +60,6 @@ prec get_prec(TokenType type) {
   case GRT:
   case LQ:
   case GQ:
-  case EQEQ:
   case NOTEQ:
   case OR:
   case AND:
@@ -71,6 +70,7 @@ prec get_prec(TokenType type) {
   case BITWISE_RIGHT_SHIFT:
   case QUES:
     return COMP;
+  case EQEQ:
   case NOT:
   case ADDR:
   case DEREF:
@@ -82,6 +82,7 @@ prec get_prec(TokenType type) {
     // case DEC:
     //   return POSTFIX;
   case LPRN:
+  case LB:
     return CALL;
   default:
     return NONE;
@@ -368,7 +369,6 @@ unique_ptr<Node> Parser::parseExpr(int rbp) {
 
 unique_ptr<Node> Parser::nud(const Token &t) {
   switch (t.type) {
-  case ASCII_CH:
   case STRLIT: {
     auto node = make_unique<Node>(n_str);
     node->lexeme = t.lexeme;
@@ -406,6 +406,18 @@ unique_ptr<Node> Parser::nud(const Token &t) {
     node->children.push_back(parseExpr(lbp(t)));
     return node;
   }
+
+  case LB: {
+      auto n = make_unique<Node>(n_array);
+      if(!check(RB)){
+        do {
+          n->children.push_back(parseExpr());
+        } while (match(COMMA));
+      }
+      consume(RB, "expected ']' at end of array literal");
+      return n;
+    }
+  
   default:
     std::cerr << "unexpected token: '" << t.lexeme << "' :" << t.line << ":"
               << t.col << std::endl;
@@ -451,7 +463,7 @@ unique_ptr<Node> Parser::led(const Token &t, unique_ptr<Node> left) {
        }
   case LPRN: {
       auto call = std::make_unique<Node>(n_fn_call);
-      call->children.push_back(std::move(left)); // callee node (identifier)
+      call->children.push_back(std::move(left)); 
 
       if (!check(RPRN)) {
         do {
@@ -481,6 +493,14 @@ unique_ptr<Node> Parser::led(const Token &t, unique_ptr<Node> left) {
        n->children.push_back(std::move(left));
        n->children.push_back(std::move(true_expr));
        n->children.push_back(std::move(false_expr));
+       return n;
+     }
+
+   case LB: {
+       auto n = make_unique<Node>(n_index);
+       n->children.push_back(std::move(left));
+       n->children.push_back(parseExpr());
+       consume(RB, "expected ']'");
        return n;
      }
  

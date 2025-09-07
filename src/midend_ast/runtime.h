@@ -32,7 +32,9 @@ struct Interpreter {
   Value eval_unary(const Node* n);
   Value eval_call(const Node* n);
   Value eval_ternary(const Node* n);
-
+  Value eval_array(const Node* n);
+  Value eval_index(const Node* n);
+  
   static Value coerceInt(const Value& v);
   Value plus(const Value& a, const Value& b);
   bool equals(const Value& a, const Value& b);
@@ -43,5 +45,11 @@ struct Interpreter {
   static Value inbut(vector<Value> args);
   static Value bow(vector<Value> args);
   static Value len(vector<Value> args);
-
+  static Value num(vector<Value> args);
+  static Value chr(vector<Value> args);
+  static Value ord(vector<Value> args);
+  static Value push(vector<Value> args);
+  static Value pop(vector<Value> args);
+  static Value init_array(vector<Value> args);
+  static Value ext(vector<Value> args);
   };

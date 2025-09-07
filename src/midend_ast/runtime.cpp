@@ -3,6 +3,7 @@
 #include "dy_types.h"
 #include <cmath>
 #include <cstddef>
+#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -28,19 +29,111 @@ Value Interpreter::inbut(vector<Value> args){
 
 Value Interpreter::bow(vector<Value> args){
   if (args.size() != 2) throw runtime_error("pow expects 2 args");
-    long long base = Interpreter::coerceInt(args[0]).i;
-    long long exp  = Interpreter::coerceInt(args[1]).i;
+    long long base = coerceInt(args[0]).i;
+    long long exp  = coerceInt(args[1]).i;
 
-    long long result = static_cast<long long>(std::pow(base, exp));
+    long long result = std::pow(base, exp);
     return Value::Int(result);
  }
 
  Value Interpreter::len(vector<Value> args){
    if(args.size() != 1) throw runtime_error("len() takes at most one argument");
 
-   string len = args[0].toString();
-   return Value::Int(len.size());
+   Value v = args[0];
+   switch (v.type) {
+     case Str: return Value::Int(v.s.size());
+     case Array: return Value::Int(v.array.size());
+      default:  throw runtime_error("len() not supported for this type");
+   }
+   
  }
+
+ Value Interpreter::num(vector<Value> args){
+    if(args.size() != 1) 
+        throw runtime_error("num() expects exactly one argument");
+
+    Value v = args[0];
+    switch(v.type){
+        case Type::Int: 
+            return v; 
+        case Type::Str: {
+            if(v.s.empty()) return Value::Int(0);
+            try {
+                long long n = std::stoll(v.s); 
+                return Value::Int(n);
+            } catch(const std::invalid_argument&) {
+                throw runtime_error("cannot convert string to number: " + v.s);
+            } catch(const std::out_of_range&) {
+                throw runtime_error("number out of range: " + v.s);
+            }
+        }
+        case Type::Nil:
+            return Value::Int(0);
+        default:
+            throw runtime_error("cannot convert value to number");
+    }
+}
+
+Value Interpreter::ord(vector<Value> args) {
+    if(args.size() != 1 || args[0].type != Type::Str || args[0].s.size() != 1)
+        throw runtime_error("ord() expects a single-character string");
+    return Value::Int(static_cast<int>(args[0].s[0]));
+}
+
+Value Interpreter::chr(vector<Value> args){
+    if(args.size() != 1) throw runtime_error("chr() expects one integer argument");
+    int code = coerceInt(args[0]).i;
+    return Value::String(std::string(1, static_cast<unsigned char>(code)));
+}
+
+Value Interpreter::push(std::vector<Value> args) {
+    if (args.size() < 2) throw runtime_error("push() expects at least a list and one value");
+    Value list = args[0];
+    if (list.type != Type::Array)
+        throw runtime_error("first argument must be an array");
+
+    for (size_t i = 1; i < args.size(); i++)
+        list.push(args[i]);
+
+    return list;  // return modified array // i.e. a copy
+}
+
+
+Value Interpreter::pop(std::vector<Value> args) {
+    if (args.size() != 1)
+        throw runtime_error("pop() expects a single array argument");
+
+    Value list = args[0];
+    if (list.type != Type::Array)
+        throw runtime_error("pop() expects an array");
+
+    if (list.array.empty())
+        throw runtime_error("pop() called on empty array");
+
+    Value val = list.array.back();
+    list.array.pop_back();
+
+    return list;  // return modified array // i.e. a copy
+}
+
+Value Interpreter::init_array(std::vector<Value> args) {
+    if (args.size() != 2)
+        throw std::runtime_error("array(size, init) expects exactly 2 arguments");
+
+    Value sizeVal = coerceInt(args[0]);
+    if (sizeVal.i < 0)
+        throw std::runtime_error("array size must be non-negative");
+
+    std::vector<Value> elems(sizeVal.i, args[1]);
+    return Value::Array(elems);
+}
+
+Value Interpreter::ext(vector<Value> args){
+  if(args.size() != 1) throw runtime_error("exit() accpets a single argument");
+  long long n = coerceInt(args[0]).i;
+  exit(n);
+  return Value::Nil();
+}
 
 void Interpreter::run(const Node* root){
   if(!root || root->type != n_block) throw runtime_error("program must be a block");
@@ -52,6 +145,15 @@ void Interpreter::run(const Node* root){
     env.define("bow", Value::NativeFunction(bow));
     env.define("inbut", Value::NativeFunction(inbut));
     env.define("len", Value::NativeFunction(len));
+    env.define("num", Value::NativeFunction(num));
+    env.define("chr", Value::NativeFunction(chr));
+    env.define("ord", Value::NativeFunction(ord));
+    env.define("push", Value::NativeFunction(push));
+    env.define("pop", Value::NativeFunction(pop));
+    env.define("array", Value::NativeFunction(init_array));
+    env.define("exit", Value::NativeFunction(ext));
+
+
   exec_block(root);
 }
 
@@ -96,7 +198,7 @@ void Interpreter::exec_set(const Node* n){
 
 void Interpreter::exec_print(const Node* n){
   Value v = eval(n->children[0].get());
-  cout << v.toString() << endl;  
+  cout << v.toString();  
 }
 
 void Interpreter::exec_input(const Node* n){
@@ -175,6 +277,8 @@ Value Interpreter::eval(const Node* n){
     case n_assign: return eval_assign(n);
     case n_fn_call: return eval_call(n);
     case n_ternary: return eval_ternary(n);
+    case n_array: return eval_array(n);
+    case n_index: return eval_index(n);
 
       default: throw std::runtime_error("eval: unsupported node kind");
   }
@@ -195,7 +299,21 @@ Value Interpreter::eval_assign(const Node* n){
   if(lhs->type == n_id) {
   env.assign(lhs->lexeme, v);
   return v;
-  }
+  } else if(lhs->type == n_index) {
+        Value arr = eval(lhs->children[0].get());
+        Value idx = coerceInt(eval(lhs->children[1].get()));
+        if(arr.type != Type::Array) throw runtime_error("not an array");
+        if(idx.i < 0 || idx.i >= (long long)arr.array.size())
+            throw runtime_error("array index out of bounds");
+        arr.array[idx.i] = v;
+        // write back to variable
+        const Node* arrNode = lhs->children[0].get();
+        if(arrNode->type != n_id) throw runtime_error("array assignment unsupported");
+        env.assign(arrNode->lexeme, arr);
+        return v;
+    }
+
+  
    throw runtime_error("invalid assignment target");
 }
 
@@ -220,8 +338,8 @@ Value Interpreter::eval_unary(const Node* n){
         long long delta = (n->op == INC ? 1 : -1);
         Value newVal = Value::Int(coerceInt(*v).i + delta);
 
-        env.assign(a->lexeme, newVal); // update in environment
-        return newVal;                 // return the updated value
+        env.assign(a->lexeme, newVal); 
+        return newVal;                 
        }
        case BITWISE_NOT: return Value::Int(~coerceInt(v).i);
 
@@ -313,6 +431,30 @@ Value Interpreter::eval_ternary(const Node* n){
   } else return eval(n->children[2].get());
 }
 
+Value Interpreter::eval_array(const Node* n){
+   vector<Value> elems;
+   for(auto& ch : n->children) elems.push_back(eval(ch.get()));
+   return Value::Array(elems);
+}
+
+Value Interpreter::eval_index(const Node* n){
+  Value arr = eval(n->children[0].get());
+  Value idx = coerceInt(eval(n->children[1].get()));
+  if(arr.type == Type::Array) {
+  if(idx.i < 0 || idx.i >= (long long)arr.array.size())
+      throw runtime_error("array index out of bounds");
+  return arr.array[idx.i];
+  }
+  if (arr.type == Type::Str) {
+        if (idx.i < 0 || idx.i >= (long long)arr.s.size())
+            throw runtime_error("string index out of bounds");
+        // wrap single character into a string Value
+        return Value::String(std::string(1, arr.s[idx.i]));
+    }
+    
+    throw runtime_error("not an array or string");
+}
+
 Value Interpreter::coerceInt(const Value& v){
   switch (v.type) {
     case Int: return v;
@@ -338,5 +480,6 @@ bool Interpreter::equals(const Value& a, const Value& b){
      return coerceInt(a).i == coerceInt(b).i;
    if(a.type == Bool && b.type == Bool)
      return a.truthy() == b.truthy();
+   
   return false;
 }

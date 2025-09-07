@@ -102,7 +102,6 @@ struct Lexer {
 
   void isWhiteSpace();
 
-  Token makeToken(TokenType type, str lexeme, usize line, usize col);
   Token symbolToken();
   Token toString();
   Token toAscii();
