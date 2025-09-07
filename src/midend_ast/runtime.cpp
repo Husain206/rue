@@ -1,16 +1,46 @@
 #include "runtime.h"
 #include "sym_table.h"
 #include "dy_types.h"
+#include <cmath>
+#include <cstddef>
 #include <iostream>
 #include <string>
 #include <vector>
 
-Value brint(vector<Value> args) {
+Value Interpreter::brint(vector<Value> args) {
   for(auto arg : args)
     cout << arg.toString() << " ";
   cout << endl;
   return Value::Nil();
 }
+
+Value Interpreter::inbut(vector<Value> args){
+  string prompt;
+  if(args.size() == 1) prompt = args[0].toString();
+  else if(args.size() > 1) throw runtime_error("input() takes at most one argument");
+  cout << prompt;
+
+  string line;
+  if(!getline(cin, line)) throw runtime_error("failed to read input");
+
+  return Value::String(line);
+}
+
+Value Interpreter::bow(vector<Value> args){
+  if (args.size() != 2) throw runtime_error("pow expects 2 args");
+    long long base = Interpreter::coerceInt(args[0]).i;
+    long long exp  = Interpreter::coerceInt(args[1]).i;
+
+    long long result = static_cast<long long>(std::pow(base, exp));
+    return Value::Int(result);
+ }
+
+ Value Interpreter::len(vector<Value> args){
+   if(args.size() != 1) throw runtime_error("len() takes at most one argument");
+
+   string len = args[0].toString();
+   return Value::Int(len.size());
+ }
 
 void Interpreter::run(const Node* root){
   if(!root || root->type != n_block) throw runtime_error("program must be a block");
@@ -19,6 +49,9 @@ void Interpreter::run(const Node* root){
     env.define("true",  Value::Bool(true));
     env.define("false", Value::Bool(false));
     env.define("brint", Value::NativeFunction(brint));
+    env.define("bow", Value::NativeFunction(bow));
+    env.define("inbut", Value::NativeFunction(inbut));
+    env.define("len", Value::NativeFunction(len));
   exec_block(root);
 }
 
@@ -141,6 +174,7 @@ Value Interpreter::eval(const Node* n){
     case n_unary:  return eval_unary(n);
     case n_assign: return eval_assign(n);
     case n_fn_call: return eval_call(n);
+    case n_ternary: return eval_ternary(n);
 
       default: throw std::runtime_error("eval: unsupported node kind");
   }
@@ -209,6 +243,11 @@ Value Interpreter::eval_binary(const Node* n){
       if(R == 0) throw runtime_error("divison by zero");
       return Value::Int(coerceInt(l).i / coerceInt(r).i);
     }
+
+    case POW:{
+         return Value::Int(pow(coerceInt(l).i, coerceInt(r).i));
+         }
+     
     case MOD: {
         auto R = coerceInt(r).i; if(R == 0) throw std::runtime_error("mod by zero");
          return Value::Int(coerceInt(l).i % R);
@@ -265,6 +304,13 @@ Value Interpreter::eval_call(const Node* n){
     }
     env.pop();
     return ret;
+}
+
+Value Interpreter::eval_ternary(const Node* n){
+  Value cond = eval(n->children[0].get());
+  if(cond.truthy()){
+    return eval(n->children[1].get());
+  } else return eval(n->children[2].get());
 }
 
 Value Interpreter::coerceInt(const Value& v){
