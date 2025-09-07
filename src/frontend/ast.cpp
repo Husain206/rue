@@ -88,6 +88,11 @@ void printAST(const Node *node, int indent){
       std::cout << "Call(" << node->lexeme << ")\n";
       for (auto &c : node->children) printAST(c.get(), indent + 1);
       break;
+    case n_ternary:
+      cout << "ternary\n";
+      for (auto &c : node->children) {
+           printAST(c.get(), indent + 1);      
+      }
   }
 }
 

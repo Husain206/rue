@@ -4,6 +4,7 @@
 #include "lexer.h"
 #include <iostream>
 #include <memory>
+#include <string>
 
 Token Parser::peek() {
   return (!isAtEnd()) ? tokens[current] : Token{EoF, "", 0, 0};
@@ -53,6 +54,7 @@ prec get_prec(TokenType type) {
     return SUM;
   case STAR:
   case SLASH:
+  case POW:
     return PRODUCT;
   case LST:
   case GRT:
@@ -67,6 +69,7 @@ prec get_prec(TokenType type) {
   case BITWISE_XOR:
   case BITWISE_LEFT_SHIFT:
   case BITWISE_RIGHT_SHIFT:
+  case QUES:
     return COMP;
   case NOT:
   case ADDR:
@@ -122,7 +125,8 @@ unique_ptr<Node> Parser::parse_stmt() {
 
   auto expr = parseExpr();
   if (expr) {
-    consume(SEMIC, "Expected ';' after expression or unknown statement\n");
+    consume(SEMIC, "Expected ';' after expression or unknown statement " + to_string(peek().line) + ":"
+              + to_string(peek().col) + "\n");
     auto node = make_unique<Node>(n_expr_stmt);
     node->children.push_back(std::move(expr));
     return node;
@@ -425,6 +429,7 @@ unique_ptr<Node> Parser::led(const Token &t, unique_ptr<Node> left) {
   case GRT:
   case LQ:
   case GQ:
+  case POW:
   case BITWISE_OR:
   case BITWISE_XOR:
   case BITWISE_LEFT_SHIFT:
@@ -456,6 +461,28 @@ unique_ptr<Node> Parser::led(const Token &t, unique_ptr<Node> left) {
       consume(RPRN, "Expected ')' after arguments");
       return call;
     }
+
+   case INC:
+   case DEC: {
+       auto n = make_unique<Node>(n_unary);
+       n->op = t.type;
+       n->lexeme = t.lexeme;
+       n->children.push_back(std::move(left));
+       
+       return n;
+     }
+
+   case QUES: {
+       auto true_expr = parseExpr();
+       consume(COLON, "Expected ':' in ternary operator");
+       auto false_expr = parseExpr();
+
+       auto n = make_unique<Node>(n_ternary);
+       n->children.push_back(std::move(left));
+       n->children.push_back(std::move(true_expr));
+       n->children.push_back(std::move(false_expr));
+       return n;
+     }
  
    default:
      std::cerr << "Unhandled infix operator: " << t.lexeme << "\n";

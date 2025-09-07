@@ -50,6 +50,8 @@ typedef enum {
   COLON,
   DQ,
   SQ,
+  POW,
+  
 
   // comparsion
   NOTEQ,
@@ -64,6 +66,7 @@ typedef enum {
   AND,
   NOT,
   MOD,
+  QUES,
 
   BITWISE_OR,
   BITWISE_XOR,

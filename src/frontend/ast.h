@@ -28,6 +28,7 @@ typedef enum {
       n_fn_dec,
       n_fn_call,
       n_return,
+      n_ternary,
 } NodeType;
 
 

@@ -61,7 +61,7 @@ void Lexer::isWhiteSpace() {
   switch (c) {
      case '+': if(match('+')) return {INC, "++", line, a}; else return {PLUS, "+", line, a};
      case '-': if(match('-')) return {DEC, "--", line, a}; else return {MINUS, "-", line, a};
-     case '*': return {STAR, "*", line, a};
+     case '*': if(match('*')) return {POW, "**", line, a}; else return {STAR, "*", line, a};
      case '/': return {SLASH, "/", line, a};
      case ',': return {COMMA, ",", line, a};
      case '.': return {DOT, ".", line, a};
@@ -82,6 +82,7 @@ void Lexer::isWhiteSpace() {
      case '!': return {NOT, "!", line, a};
      case '%': return {MOD, "%", line, a};
      case ':': if(match('=')) return {EQ, ":=", line, a}; else return {COLON, ":", line, a};
+     case '?': return {QUES, "?", line, a};
 
      case '"': return toString();
      case '\'': return toAscii();

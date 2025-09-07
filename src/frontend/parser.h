@@ -38,10 +38,6 @@ unique_ptr<Node> parse_break();
 unique_ptr<Node> parse_continue();
 unique_ptr<Node> parse_return();
 unique_ptr<Node> parse_fn();
-// void parse_return();
-// std::vector<Token> parse_params();
-// void parse_fn();
-// str parse_fn_call(const str& fn_name);
 
 
 // pratt parser
