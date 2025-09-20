@@ -6,6 +6,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <vector>
 
 int main(int argc, char *argv[]) {
 
@@ -29,6 +30,7 @@ if (fname.size() < 3 || fname.substr(fname.size() - 3) != ".ru") {
   std::ostringstream buffer;
   buffer << file.rdbuf();
   str src = buffer.str();
+  vector<string> args(argv + 1, argv + argc);
 
   Lexer lexer;
   auto tokens = lexer.tokenize(src);
@@ -36,10 +38,10 @@ if (fname.size() < 3 || fname.substr(fname.size() - 3) != ".ru") {
   Parser parser;
   parser.tokens = tokens;
   auto ast = parser.parse();
-  // printAST(ast.get());
+  printAST(ast.get());
   Interpreter inter;
   try{
-    inter.run(ast.get());
+    inter.run(ast.get(), args);
   } catch(const exception& e){
     cerr << "runtime error: " << e.what() << endl; 
   }
@@ -47,5 +49,4 @@ if (fname.size() < 3 || fname.substr(fname.size() - 3) != ".ru") {
   
   return 0;
 }
-
 

@@ -1,10 +1,7 @@
-fn fack(n){
-	if(n <=1){ return 1; }
-
-	return n * fack(n-1);
+fn main(args){
+  set i := array(10, 0);
+  set i := pop(i);
+  brint(len(i));
+  brint("\n",bow(2, 3));
+  exit(0);
 }
-
-set x;
-print "enter n: ";
-input x;
-print fack(x);

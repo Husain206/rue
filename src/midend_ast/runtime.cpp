@@ -7,154 +7,75 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include "built-ins.h"
 
-Value Interpreter::brint(vector<Value> args) {
-  for(auto arg : args)
-    cout << arg.toString() << " ";
-  cout << endl;
-  return Value::Nil();
-}
 
-Value Interpreter::inbut(vector<Value> args){
-  string prompt;
-  if(args.size() == 1) prompt = args[0].toString();
-  else if(args.size() > 1) throw runtime_error("input() takes at most one argument");
-  cout << prompt;
+Value Interpreter::callFunction(const Value& fnVal, const std::vector<Value>& args) {
+    if (fnVal.type != Type::Func) 
+        throw runtime_error("callFunction: not a function");
 
-  string line;
-  if(!getline(cin, line)) throw runtime_error("failed to read input");
+    const auto& params = fnVal.params;
+    const Node* body = fnVal.body;
 
-  return Value::String(line);
-}
+    if (params.size() != args.size())
+        throw runtime_error("argument count mismatch when calling function");
 
-Value Interpreter::bow(vector<Value> args){
-  if (args.size() != 2) throw runtime_error("pow expects 2 args");
-    long long base = coerceInt(args[0]).i;
-    long long exp  = coerceInt(args[1]).i;
+    env.push();
+    for (size_t i = 0; i < params.size(); ++i)
+        env.define(params[i], args[i]);
 
-    long long result = std::pow(base, exp);
-    return Value::Int(result);
- }
-
- Value Interpreter::len(vector<Value> args){
-   if(args.size() != 1) throw runtime_error("len() takes at most one argument");
-
-   Value v = args[0];
-   switch (v.type) {
-     case Str: return Value::Int(v.s.size());
-     case Array: return Value::Int(v.array.size());
-      default:  throw runtime_error("len() not supported for this type");
-   }
-   
- }
-
- Value Interpreter::num(vector<Value> args){
-    if(args.size() != 1) 
-        throw runtime_error("num() expects exactly one argument");
-
-    Value v = args[0];
-    switch(v.type){
-        case Type::Int: 
-            return v; 
-        case Type::Str: {
-            if(v.s.empty()) return Value::Int(0);
-            try {
-                long long n = std::stoll(v.s); 
-                return Value::Int(n);
-            } catch(const std::invalid_argument&) {
-                throw runtime_error("cannot convert string to number: " + v.s);
-            } catch(const std::out_of_range&) {
-                throw runtime_error("number out of range: " + v.s);
-            }
-        }
-        case Type::Nil:
-            return Value::Int(0);
-        default:
-            throw runtime_error("cannot convert value to number");
+    Value ret = Value::Nil();
+    try {
+        exec(body); 
+    } catch (ReturnException& re) {
+        ret = re.value;
     }
+    env.pop();
+    return ret;
 }
 
-Value Interpreter::ord(vector<Value> args) {
-    if(args.size() != 1 || args[0].type != Type::Str || args[0].s.size() != 1)
-        throw runtime_error("ord() expects a single-character string");
-    return Value::Int(static_cast<int>(args[0].s[0]));
-}
-
-Value Interpreter::chr(vector<Value> args){
-    if(args.size() != 1) throw runtime_error("chr() expects one integer argument");
-    int code = coerceInt(args[0]).i;
-    return Value::String(std::string(1, static_cast<unsigned char>(code)));
-}
-
-Value Interpreter::push(std::vector<Value> args) {
-    if (args.size() < 2) throw runtime_error("push() expects at least a list and one value");
-    Value list = args[0];
-    if (list.type != Type::Array)
-        throw runtime_error("first argument must be an array");
-
-    for (size_t i = 1; i < args.size(); i++)
-        list.push(args[i]);
-
-    return list;  // return modified array // i.e. a copy
-}
-
-
-Value Interpreter::pop(std::vector<Value> args) {
-    if (args.size() != 1)
-        throw runtime_error("pop() expects a single array argument");
-
-    Value list = args[0];
-    if (list.type != Type::Array)
-        throw runtime_error("pop() expects an array");
-
-    if (list.array.empty())
-        throw runtime_error("pop() called on empty array");
-
-    Value val = list.array.back();
-    list.array.pop_back();
-
-    return list;  // return modified array // i.e. a copy
-}
-
-Value Interpreter::init_array(std::vector<Value> args) {
-    if (args.size() != 2)
-        throw std::runtime_error("array(size, init) expects exactly 2 arguments");
-
-    Value sizeVal = coerceInt(args[0]);
-    if (sizeVal.i < 0)
-        throw std::runtime_error("array size must be non-negative");
-
-    std::vector<Value> elems(sizeVal.i, args[1]);
-    return Value::Array(elems);
-}
-
-Value Interpreter::ext(vector<Value> args){
-  if(args.size() != 1) throw runtime_error("exit() accpets a single argument");
-  long long n = coerceInt(args[0]).i;
-  exit(n);
-  return Value::Nil();
-}
-
-void Interpreter::run(const Node* root){
+void Interpreter::run(const Node* root, const std::vector<std::string>& args){
   if(!root || root->type != n_block) throw runtime_error("program must be a block");
-  
+
     // define built-ins
     env.define("true",  Value::Bool(true));
     env.define("false", Value::Bool(false));
-    env.define("brint", Value::NativeFunction(brint));
-    env.define("bow", Value::NativeFunction(bow));
-    env.define("inbut", Value::NativeFunction(inbut));
-    env.define("len", Value::NativeFunction(len));
-    env.define("num", Value::NativeFunction(num));
-    env.define("chr", Value::NativeFunction(chr));
-    env.define("ord", Value::NativeFunction(ord));
-    env.define("push", Value::NativeFunction(push));
-    env.define("pop", Value::NativeFunction(pop));
-    env.define("array", Value::NativeFunction(init_array));
-    env.define("exit", Value::NativeFunction(ext));
+    env.define("brint", Value::NativeFunction(built_ins::brint));
+    env.define("bow", Value::NativeFunction(built_ins::bow));
+    env.define("inbut", Value::NativeFunction(built_ins::inbut));
+    env.define("len", Value::NativeFunction(built_ins::len));
+    env.define("num", Value::NativeFunction(built_ins::num));
+    env.define("chr", Value::NativeFunction(built_ins::chr));
+    env.define("ord", Value::NativeFunction(built_ins::ord));
+    env.define("push", Value::NativeFunction(built_ins::push));
+    env.define("pop", Value::NativeFunction(built_ins::pop));
+    env.define("array", Value::NativeFunction(built_ins::init_array));
+    env.define("exit", Value::NativeFunction(built_ins::ext));
 
 
-  exec_block(root);
+  exec_block(root, true);
+
+    auto entryOpt = env.get("main");
+    if (!entryOpt) {
+        throw runtime_error("program must have an entry point: function 'main' not found");
+    }
+    Value entry = *entryOpt;
+    if (entry.type != Type::Func) {
+        throw runtime_error("'main' must be a function");
+    }
+
+    vector<Value> main_args;
+    vector<Value> arg_values;
+    for(const auto& s : args)
+      arg_values.push_back(Value::String(s));
+    
+    main_args.push_back(Value::Array(arg_values));
+    
+    Value result = callFunction(entry, main_args);
+    if(result.type == Type::Int) {
+        int code = (int) result.i;
+        if (code != 0) exit(code);
+    }
 }
 
 void Interpreter::exec(const Node* n){
@@ -178,10 +99,11 @@ void Interpreter::exec(const Node* n){
   }
 }
 
-void Interpreter::exec_block(const Node* block){
-  env.push();
-  for(auto& ch : block->children) exec(ch.get());
-  env.pop();
+void Interpreter::exec_block(const Node* block, bool declareOnly){
+  for(auto& ch : block->children){
+    if(declareOnly && ch->type != n_fn_dec) continue;
+     exec(ch.get());
+  }
 }
 
 void Interpreter::exec_set(const Node* n){

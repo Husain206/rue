@@ -10,12 +10,12 @@ struct ReturnException {
 };
 
 struct Interpreter {
-  void run(const Node* root);
+  Value callFunction(const Value& fnVal, const std::vector<Value>& args);
+  void run(const Node* root, const std::vector<std::string>& args = {});
 
   Env env;
-  // ostream* out = &cout;
   void exec(const Node* n);
-  void exec_block(const Node* block);
+  void exec_block(const Node* block, bool declareOnly=false);
   void exec_set(const Node* n);
   void exec_print(const Node* n);
   void exec_input(const Node* n);
@@ -38,18 +38,4 @@ struct Interpreter {
   static Value coerceInt(const Value& v);
   Value plus(const Value& a, const Value& b);
   bool equals(const Value& a, const Value& b);
-
-
-  // built-ins
-  static Value brint(vector<Value> args);
-  static Value inbut(vector<Value> args);
-  static Value bow(vector<Value> args);
-  static Value len(vector<Value> args);
-  static Value num(vector<Value> args);
-  static Value chr(vector<Value> args);
-  static Value ord(vector<Value> args);
-  static Value push(vector<Value> args);
-  static Value pop(vector<Value> args);
-  static Value init_array(vector<Value> args);
-  static Value ext(vector<Value> args);
-  };
+};
