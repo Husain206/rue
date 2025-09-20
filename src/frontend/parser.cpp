@@ -1,17 +1,16 @@
 #include "parser.h"
 #include "ast.h"
 #include "lexer.h"
-#include <cctype>
 #include <iostream>
 #include <memory>
 #include <string>
 
 Token Parser::peek() {
-  return (!isAtEnd()) ? tokens[current] : Token{EoF, "", 0, 0};
+  return (!isAtEnd()) ? tokens[current] : tokens.back();
 }
 
 // Token Parser::peekNext() { return (!isAtEnd()) ? tokens[current + 1] :
-// Token{EoF, "", 0, 0}; }
+// tokens.back(); }
 
 // Token Parser::peekPre() { return (!isAtEnd()) ? tokens[current - 1] :
 // Token{EoF, "", 0, 0}; }
@@ -38,7 +37,10 @@ bool Parser::match(TokenType type) {
 
 void Parser::consume(const TokenType &t, str msg) {
   if (!check(t)) {
-    std::cerr << "main.ru:" << peek().line << ":" << peek().col
+    if (isAtEnd())
+      std::cerr << "main.ru:<eof>: Error: " << msg << "\n";
+    else
+      std::cerr << "main.ru:" << peek().line << ":" << peek().col
               << ": Error: " << msg;
     exit(0);
   }
@@ -149,13 +151,16 @@ unique_ptr<Node> Parser::parse_set() {
      auto ident = make_unique<Node>(n_id);
      ident->lexeme = name.lexeme;
      node->children.push_back(std::move(ident));
-    
+
+  
+     
   if(check(EQ)){
-     consume(EQ, "Expected ':=' after identifier in set\n");
+     consume(EQ, "");
      auto value = parseExpr();
      node->children.push_back(std::move(value));
-  }
-  consume(SEMIC, "expected ';' at the end of set");
+     consume(SEMIC, "expected ';' at the end of set");
+  } else 
+     consume(SEMIC, "expected ':=' in set");
   
     return node;
 }

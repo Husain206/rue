@@ -28,7 +28,6 @@ typedef enum {
   NUMLIT,
   STRLIT,
   ASCII_CH,
-  VAR,
 
   // binary op
   PLUS,
