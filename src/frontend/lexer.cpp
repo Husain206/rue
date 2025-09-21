@@ -128,7 +128,15 @@ if (peek() == '\\') {
     char esc = next(); 
     switch (esc) {
         case 'n':  string += '\n'; break;
-        case '0':  string += '\0'; break;
+        case '0':
+          if (peek() == '3' && peekNext() == '3') {
+            next(); 
+            next(); 
+            string += '\x1b'; 
+          } else {
+            string += '\0'; 
+          }
+        break;
         case 't':  string += '\t'; break;
         case 'r':  string += '\r'; break;
         case '\\': string += '\\'; break;

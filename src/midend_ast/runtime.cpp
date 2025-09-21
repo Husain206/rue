@@ -101,7 +101,7 @@ void Interpreter::exec(const Node* n){
 
 void Interpreter::exec_block(const Node* block, bool declareOnly){
   for(auto& ch : block->children){
-    if(declareOnly && ch->type != n_fn_dec) continue;
+    if(declareOnly && (ch->type != n_fn_dec || ch->type == n_set)) exec(ch.get());
      exec(ch.get());
   }
 }
