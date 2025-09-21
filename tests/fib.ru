@@ -8,4 +8,7 @@ fn fib(n) {
         b := tmp + b;
     }
 }
-fib(10);
+
+fn main(args){
+    fib(10);
+}

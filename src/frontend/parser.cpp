@@ -264,7 +264,7 @@ unique_ptr<Node> Parser::parse_if() {
 
 unique_ptr<Node> Parser::parse_for_loop(){
     next();
-    consume(LPRN,"expected '(' after loop\n");
+    if(check(LPRN)) consume(LPRN, "expected '(' after for loop\n");
 
     unique_ptr<Node> init = nullptr;
     if(check(SET)) init = parse_set();
@@ -278,7 +278,7 @@ unique_ptr<Node> Parser::parse_for_loop(){
     consume(SEMIC,"Expected ';' after condition in for loop\n");
 
     auto inc = parseExpr();
-    consume(RPRN,"expected ')' after condition in for loop\n" );
+    if(check(RPRN)) consume(RPRN, "expected ')' after condition in for loop\n");
 
     consume(LCB,"expected '{' after ')' in for loop\n" );
 

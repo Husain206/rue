@@ -1,7 +1,4 @@
-#include <cstdlib>
-set arr := [" "," ", " ",
-             " ", " ", " ",
-             " ", " ", " "];
+set arr := array(9, " ");
 
 set currentPlayer := "x";
 
@@ -16,33 +13,31 @@ fn print_board(){
 }
 
 fn checkMove(inpt) {
-   if(inpt >= 0 && inpt < 9 && arr[inpt] == " "){
+   if inpt >= 0 && inpt < 9 && arr[inpt] == " "{
        return true;
-     
    }
 }
 
 fn checkDraw(){
-  for(set i :=0; i<9; i++){
-    if(arr[i] == " "){
+  for set i :=0; i<9; i++{
+    if arr[i] == " "{
       return false;
     }
   }
   return true;
 }
 
- 
 fn checkWin(player) {
   
-  if (arr[0] == player && arr[4] == player && arr[8] == player) { return true; }
-  if (arr[2] == player && arr[4] == player && arr[6] == player) { return true; }
+  if arr[0] == player && arr[4] == player && arr[8] == player { return true; }
+  if arr[2] == player && arr[4] == player && arr[6] == player { return true; }
 
-  for (set i := 0; i < 9; i := i + 3) {
-    if (arr[i] == player && arr[i + 1] == player && arr[i + 2] == player) { return true; } 
+  for set i := 0; i < 9; i := i + 3 {
+    if arr[i] == player && arr[i + 1] == player && arr[i + 2] == player { return true; } 
   }
 
-  for (set i := 0; i < 3; i++) {
-    if (arr[i] == player && arr[i + 3] == player && arr[i + 6] == player) { return true; }
+  for set i := 0; i < 3; i++ {
+    if arr[i] == player && arr[i + 3] == player && arr[i + 6] == player { return true; }
   }
 
  return false;
@@ -50,9 +45,9 @@ fn checkWin(player) {
 
 fn reset(){
   set x := inbut("do you want to continue? (y/n): ");
-      if(x == "y"){
+      if x == "y"{
         currentPlayer := "x";
-        for(set i := 0; i < 9; i++){
+        for set i := 0; i < 9; i++{
           arr[i] := " ";
         }
       } else {
@@ -61,34 +56,36 @@ fn reset(){
 }
 
 fn play(){
-  ala(true){
-    if(checkDraw()){
+  ala true{
+    if checkDraw(){
+      brint("\033c");
       print_board();
       brint("\n  ---|!Draw!|---\n");
       reset();
     }
     print_board();
     brint(currentPlayer, "'s turn");
-    set move := inbut("enter move: (0-8) ");
+    set move := num(inbut("enter move: (0-8): "));
 
-    if(!checkMove(move)){
+    if !checkMove(move){
       brint("invalid move, try again");
-      exit(-1);
+      exit -1;
     }
-
-    
 
     arr[move] := currentPlayer;
 
-    if(checkWin(currentPlayer)){
+    if checkWin(currentPlayer){
+      brint("\033c");
       print_board();
       brint(currentPlayer, "won");
       reset();
     }
 
-    currentPlayer := (currentPlayer == "x") ? "o" : "x";
+    currentPlayer := currentPlayer == "x" ? "o" : "x";
+    brint("\033c");
   }
 }
 
-
+fn main(args){
 play();
+}

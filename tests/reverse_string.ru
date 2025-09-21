@@ -5,5 +5,8 @@ fn reverse(s) {
     }
     return result;
 }
-brint(reverse("hello"));
+
+fn main(args){
+    brint(reverse("hello"));
+}
 
