@@ -273,6 +273,7 @@ Value Interpreter::eval_unary(const Node* n){
 Value Interpreter::eval_binary(const Node* n){
   Value l = eval(n->children[0].get());
   Value r = eval(n->children[1].get());
+  const Node* lhs = n->children[0].get();
 
   switch (n->op) {
     case PLUS: return plus(l, r);
@@ -302,6 +303,14 @@ Value Interpreter::eval_binary(const Node* n){
 
     case AND:    return Value::Bool(l.truthy() && eval(n->children[1].get()).truthy());
     case OR:     return Value::Bool(l.truthy() || eval(n->children[1].get()).truthy());
+
+    // a += b;
+    // a = a + b;
+    case PLUSEQ: return Value::Int(env.assign(lhs->lexeme, Value::Int(coerceInt(l).i + coerceInt(r).i)));
+    case MINUSEQ: return Value::Int(env.assign(lhs->lexeme, Value::Int(coerceInt(l).i - coerceInt(r).i)));
+    case MULEQ: return Value::Int(env.assign(lhs->lexeme, Value::Int(coerceInt(l).i * coerceInt(r).i)));
+    case DIVEQ: return Value::Int(env.assign(lhs->lexeme, Value::Int(coerceInt(l).i / coerceInt(r).i)));
+    case MODEQ: return Value::Int(env.assign(lhs->lexeme, Value::Int(coerceInt(l).i % coerceInt(r).i)));
 
     case ADDR:   return Value::Int(coerceInt(l).i & coerceInt(r).i);
     case BITWISE_OR: return Value::Int(coerceInt(l).i | coerceInt(r).i);

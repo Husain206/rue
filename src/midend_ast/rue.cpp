@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
   std::string fname = argv[1];
-if (fname.size() < 3 || fname.substr(fname.size() - 3) != ".ru") {
+if (fname.size() < 3 || fname.substr(fname.size() - 4) != ".rue") {
     std::cerr << "file extension must end with '.ru'\n";
     return 1;
 }
@@ -38,7 +38,7 @@ if (fname.size() < 3 || fname.substr(fname.size() - 3) != ".ru") {
   Parser parser;
   parser.tokens = tokens;
   auto ast = parser.parse();
-  printAST(ast.get());
+  // printAST(ast.get());
   Interpreter inter;
   try{
     inter.run(ast.get(), args);

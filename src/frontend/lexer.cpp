@@ -59,10 +59,10 @@ void Lexer::isWhiteSpace() {
   usize a = col;
   usize l = line;
   switch (c) {
-     case '+': if(match('+')) return {INC, "++", line, a}; else return {PLUS, "+", line, a};
-     case '-': if(match('-')) return {DEC, "--", line, a}; else return {MINUS, "-", line, a};
-     case '*': if(match('*')) return {POW, "**", line, a}; else return {STAR, "*", line, a};
-     case '/': return {SLASH, "/", line, a};
+     case '+': if(match('+')) return {INC, "++", line, a}; else if(match('=')) return {PLUSEQ, "+=", line, a}; else return {PLUS, "+", line, a};
+     case '-': if(match('-')) return {DEC, "--", line, a}; else if(match('=')) return {MINUSEQ, "-=", line, a}; else return {MINUS, "-", line, a};
+     case '*': if(match('*')) return {POW, "**", line, a}; else if(match('=')) return {MULEQ, "*=", line, a}; else return {STAR, "*", line, a};
+     case '/': if(match('=')) return {DIVEQ, "/=", line, a}; else return {SLASH, "/", line, a};
      case ',': return {COMMA, ",", line, a};
      case '.': return {DOT, ".", line, a};
      case ';': return {SEMIC, ";", line, a};
@@ -80,7 +80,7 @@ void Lexer::isWhiteSpace() {
      case '~': return {BITWISE_NOT, "~", line, a};
      case '&': if(match('&')) return {AND, "&&", line, a};  else return {ADDR, "&", line, a};
      case '!': if(match('=')) return {NOTEQ, "==", line, a}; else return {NOT, "!", line, a};
-     case '%': return {MOD, "%", line, a};
+     case '%': if(match('=')) return {MODEQ, "%=", line, a}; else return {MOD, "%", line, a};
      case ':': if(match('=')) return {EQ, ":=", line, a}; else return {COLON, ":", line, a};
      case '?': return {QUES, "?", line, a};
      case '"': return toString();

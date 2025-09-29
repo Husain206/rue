@@ -53,10 +53,14 @@ prec get_prec(TokenType type) {
     return ASS;
   case PLUS:
   case MINUS:
+  case PLUSEQ:
+  case MINUSEQ:
     return SUM;
   case STAR:
   case SLASH:
   case POW:
+  case MULEQ:
+  case DIVEQ:
     return PRODUCT;
   case LST:
   case GRT:
@@ -66,6 +70,7 @@ prec get_prec(TokenType type) {
   case OR:
   case AND:
   case MOD:
+  case MODEQ:
   case BITWISE_OR:
   case BITWISE_XOR:
   case BITWISE_LEFT_SHIFT:
@@ -447,6 +452,11 @@ unique_ptr<Node> Parser::led(const Token &t, unique_ptr<Node> left) {
   case LQ:
   case GQ:
   case POW:
+  case MULEQ:
+  case DIVEQ:
+  case PLUSEQ:
+  case MINUSEQ:
+  case MODEQ:
   case BITWISE_OR:
   case BITWISE_XOR:
   case BITWISE_LEFT_SHIFT:

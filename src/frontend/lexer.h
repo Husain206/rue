@@ -35,6 +35,11 @@ typedef enum {
   STAR,
   SLASH,
   EQ,
+  PLUSEQ,
+  MINUSEQ,
+  MULEQ,
+  DIVEQ,
+  MODEQ,
 
   // symbols
   RCB,
