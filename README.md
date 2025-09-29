@@ -12,80 +12,32 @@ i tried not to use OOP as much as possiable becasue OOP sucks, i think i only us
 ## Table of Contents
 
 - [Usage](#usage)
-- [Project Structure](#project-structure)
-- [Language Syntax](#language-syntax)
-
+- [About The Language](#About_The_Language)
 ## Usage
 
 1. Clone the repository:
 
-*note:* aaa ill put the Makfile in the main dir later too lazy for now :D
 ```bash
 git clone git@github.com:Husain206/rue.git
-cd rue/src
-make
-./rue tests/[file.ru]
-```
-## project structure
-```
-rue
-|
-|---> src/     -> rue.cpp // main entry 
-|       |_->   -> lexer.h lexer.cpp           // the tokenizer
-|       |_->   -> parser.h parser.cpp ast.h   // syntatic analysis
-|       |_->   -> ast.cpp                     // output the AST tree
-|       |_>    -> runtime.h runtime.cpp       // evaluator and symbol-table(semantic analysis) // im gonna seperate them soon(already did)
-|       |_>    -> Makefile                    // build file
-|       |_>    tests/                         // holds tests files for the langauge     
-|
-|---> .gitignore
-|---> README.md
+cd rue
+make ast
+./rue_runtime_ast tests/[file.ru]
 ```
 
-## Language Syntax
+## About The Language 
 
-**declaring a variable and printing:**
-```rue.ru
-set num1 := 23;
-set num2 := 3;
-set res := num1 * num2;
-print res; // 69
-res = 6 + "9"; // concatination
-print res; // 69 
-```
-i got the idea of doing **:=** recently so i hardcoded it so it's only working when you try to declare a variable, soon ill fix it :D
-print print with a new line :D, i mean yeah i should have named it println but whatever eventually ill swtich to the standard lib so whatever :D
+check <Mark style="background-color: lightblue;">tests/</Mark> to get familiar with the syntax \
+<Mark style="background-color: lightblue;">ala(as long as)</Mark> is just while loop
 
-### control flow:
-
-**true & false** are builtin variables they evaluate to 1 and 0 respectivly
-ala loop is just while loop stands for *as long as* :D
-
-so far only prefix inc or dec works (++i || --i), postfix ones are comming soon
-
-comparison and bitwise operators are all working
-
-```rue.ru
-ala(true) {
-   if(false){
-     print "true";
-   } else {
-       print "false";
-     }
-}
-```
-```rue.ru
-for(set i := 0; i < 10; ++i){
-  if(i % 2 == 0) {  // ( !(i & 1) ) also works 
-     print "even";
-  } else {
-      print "odd";
-    }
-}
-```
-also parenthesis around ala and if are not neccasry you can just do:
-```rue.ru
-if 1 < 2 {
-   print "true";
-}
-```
+built-in functions:
+* brint() => brint to print and so on 
+* inbut()
+* bow()
+* len()
+* num() => converts a value to a num
+* chr() => int value to ascii character
+* ord() => ascii character to int value
+* bush()
+* bob()
+* array()
+* exit()
