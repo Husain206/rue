@@ -11,8 +11,8 @@ struct built_ins {
   static Value num(vector<Value> args);
   static Value chr(vector<Value> args);
   static Value ord(vector<Value> args);
-  static Value push(vector<Value> args);
-  static Value pop(vector<Value> args);
+  static Value bush(vector<Value> args);
+  static Value bob(vector<Value> args);
   static Value init_array(vector<Value> args);
   static Value ext(vector<Value> args);
 };

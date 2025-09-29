@@ -47,8 +47,8 @@ void Interpreter::run(const Node* root, const std::vector<std::string>& args){
     env.define("num", Value::NativeFunction(built_ins::num));
     env.define("chr", Value::NativeFunction(built_ins::chr));
     env.define("ord", Value::NativeFunction(built_ins::ord));
-    env.define("push", Value::NativeFunction(built_ins::push));
-    env.define("pop", Value::NativeFunction(built_ins::pop));
+    env.define("bush", Value::NativeFunction(built_ins::bush));
+    env.define("bob", Value::NativeFunction(built_ins::bob));
     env.define("array", Value::NativeFunction(built_ins::init_array));
     env.define("exit", Value::NativeFunction(built_ins::ext));
 

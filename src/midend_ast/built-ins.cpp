@@ -81,7 +81,7 @@ Value built_ins::chr(vector<Value> args){
     return Value::String(std::string(1, static_cast<unsigned char>(code)));
 }
 
-Value built_ins::push(std::vector<Value> args) {
+Value built_ins::bush(std::vector<Value> args) {
     if (args.size() < 2) throw runtime_error("push() expects at least a list and one value");
     Value list = args[0];
     if (list.type != Type::Array)
@@ -94,7 +94,7 @@ Value built_ins::push(std::vector<Value> args) {
 }
 
 
-Value built_ins::pop(std::vector<Value> args) {
+Value built_ins::bob(std::vector<Value> args) {
     if (args.size() != 1)
         throw runtime_error("pop() expects a single array argument");
 
