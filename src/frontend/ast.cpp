@@ -40,6 +40,14 @@ void printAST(const Node *node, int indent){
       std::cout << "InputStmt\n";
       for (auto &c : node->children) printAST(c.get(), indent + 1);
       break;
+    case n_array:
+      cout << "array\n";
+      for(auto &c : node->children) printAST(c.get(), indent + 1);
+      break;
+    case n_index:
+      cout << "index\n";
+      for(auto &c : node->children) printAST(c.get(), indent + 1);
+      break;
     case n_ala:
       std::cout << "alaStmt\n";
       printIndent(indent+1);
@@ -88,11 +96,27 @@ void printAST(const Node *node, int indent){
       std::cout << "Call(" << node->lexeme << ")\n";
       for (auto &c : node->children) printAST(c.get(), indent + 1);
       break;
+    case n_struct:
+      std::cout << "struct(" << node->lexeme << ")\n";
+      for (auto &c : node->children) printAST(c.get(), indent + 1);
+      break;
+        case n_struct_init:
+      std::cout << "struct init: " << node->lexeme << "\n";
+      for (auto &c : node->children) printAST(c.get(), indent + 1);
+      break;
+        case n_struct_field:
+      std::cout << "struct feild: " << node->lexeme << "\n";
+      for (auto &c : node->children) printAST(c.get(), indent + 1);
+      break;
+
+
+
     case n_ternary:
       cout << "ternary\n";
       for (auto &c : node->children) {
            printAST(c.get(), indent + 1);      
       }
+      break;       
   }
 }
 

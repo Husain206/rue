@@ -31,6 +31,10 @@ typedef enum {
       n_ternary,
       n_array,
       n_index,
+      n_struct,
+      n_struct_init,
+      n_struct_field,
+      // n_enum,
 } NodeType;
 
 
