@@ -1,4 +1,5 @@
 #pragma once
+#include <unordered_map>
 #include <vector>
 #include <string>
 using namespace std;
@@ -11,6 +12,8 @@ typedef enum {
   Func,
   NativeFunc,
   Array,
+  Struct,
+  STRUCT_DEF,
 } Type;
 
 struct Node;
@@ -30,6 +33,8 @@ struct Value {
    const Node* body = nullptr;
 
    vector<Value> array;
+   unordered_map<string, Value> fields;
+   vector<string> struct_def_fields; 
 
    static Value Int(long long v);
    static Value String(string v);
@@ -38,6 +43,9 @@ struct Value {
    static Value Function(vector<string> ps, const Node* body);
    static Value NativeFunction(CppFunc func);
    static Value Array(vector<Value> elems);
+   static Value Struct(unordered_map<string, Value> fields);
+   static Value StructDef(const vector<string>& field_names);
+
 
    void push(const Value& v);
    Value pop();

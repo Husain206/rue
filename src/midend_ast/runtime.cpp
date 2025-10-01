@@ -14,26 +14,23 @@ Value Interpreter::callFunction(const Value& fnVal, const std::vector<Value>& ar
     if (fnVal.type != Type::Func) 
         throw runtime_error("callFunction: not a function");
 
-    const auto& params = fnVal.params;
-    const Node* body = fnVal.body;
-
-    if (params.size() != args.size())
+    if (fnVal.params.size() != args.size())
         throw runtime_error("argument count mismatch when calling function");
 
     env.push();
-    for (size_t i = 0; i < params.size(); ++i)
-        env.define(params[i], args[i]);
+    for (size_t i = 0; i < fnVal.params.size(); ++i)
+        env.define(fnVal.params[i], args[i]);
 
     Value ret = Value::Nil();
     try {
-        exec(body); 
+        exec(fnVal.body);
     } catch (ReturnException& re) {
         ret = re.value;
     }
+
     env.pop();
     return ret;
 }
-
 void Interpreter::run(const Node* root, const std::vector<std::string>& args){
   if(!root || root->type != n_block) throw runtime_error("program must be a block");
 
@@ -93,6 +90,7 @@ void Interpreter::exec(const Node* n){
     case n_fn_dec:      exec_fn(n); break;
     case n_return:      exec_return(n); break;
     case n_input:       exec_input(n); break;
+    case n_struct:      exec_struct(n); break;
     
 
       default: throw runtime_error("exec: unsupported node " + n->lexeme);
@@ -100,10 +98,15 @@ void Interpreter::exec(const Node* n){
 }
 
 void Interpreter::exec_block(const Node* block, bool declareOnly){
-  for(auto& ch : block->children){
-    if(declareOnly && (ch->type != n_fn_dec || ch->type == n_set)) exec(ch.get());
-     exec(ch.get());
-  }
+    for (auto& ch : block->children) {
+        if (declareOnly) {
+            if (ch->type == n_fn_dec || ch->type == n_set || ch->type == n_struct) {
+                exec(ch.get());
+            }
+        } else {
+            exec(ch.get());
+        }
+    }
 }
 
 void Interpreter::exec_set(const Node* n){
@@ -188,6 +191,16 @@ void Interpreter::exec_return(const Node* n){
   throw ReturnException(v);
 }
 
+void Interpreter::exec_struct(const Node* n){
+    std::vector<std::string> fields;
+    for (auto& ch : n->children) {
+        if (ch->type != n_id) throw runtime_error("struct field must be an identifier");
+        fields.push_back(ch->lexeme);
+    }
+    env.define(n->lexeme, Value::StructDef(fields));
+}
+
+
 
 Value Interpreter::eval(const Node* n){
   switch (n->type) {
@@ -201,6 +214,8 @@ Value Interpreter::eval(const Node* n){
     case n_ternary: return eval_ternary(n);
     case n_array: return eval_array(n);
     case n_index: return eval_index(n);
+    case n_struct_init: return eval_struct_init(n);
+    case n_struct_field: return eval_struct_index(n);
 
       default: throw std::runtime_error("eval: unsupported node kind");
   }
@@ -233,7 +248,34 @@ Value Interpreter::eval_assign(const Node* n){
         if(arrNode->type != n_id) throw runtime_error("array assignment unsupported");
         env.assign(arrNode->lexeme, arr);
         return v;
+    } else if (lhs->type == n_struct_field) {
+    // lhs->children[0] is base expression (we only support simple id base for write-back)
+    const Node* baseNode = lhs->children[0].get();
+    const Node* fieldNode = lhs->children[1].get();
+    if (fieldNode->type != n_id) throw runtime_error("expected field name");
+
+    std::string fieldName = fieldNode->lexeme;
+    // evaluate RHS
+    Value newVal = eval(rhs);
+
+    // If base is identifier variable: modify in env
+    if (baseNode->type == n_id) {
+        auto baseOpt = env.get(baseNode->lexeme);
+        if (!baseOpt) throw runtime_error("undefined variable: " + baseNode->lexeme);
+        Value baseVal = *baseOpt;
+        if (baseVal.type != Type::Struct) throw runtime_error("not a struct instance");
+        // mutate
+        baseVal.fields[fieldName] = newVal;
+        // write back
+        env.assign(baseNode->lexeme, baseVal);
+        return newVal;
+    } else {
+        // For general expressions as base (like func().x or arr[i].x) you'd need lvalue support;
+        // for now, throw.
+        throw runtime_error("struct field assignment currently only supported on identifiers");
     }
+}
+
 
   
    throw runtime_error("invalid assignment target");
@@ -322,37 +364,24 @@ Value Interpreter::eval_binary(const Node* n){
   }
 }
 
-Value Interpreter::eval_call(const Node* n){
-    const Node* calleeNode = n->children[0].get();
-    Value callee = eval(calleeNode);
+Value Interpreter::eval_call(const Node* n) {
+    Value callee = eval(n->children[0].get());
 
     if (callee.type == Type::NativeFunc) {
-      vector<Value> args;
-      for(size_t i=1; i < n->children.size(); i++)
+        std::vector<Value> args;
+        for (size_t i = 1; i < n->children.size(); i++)
+            args.push_back(eval(n->children[i].get()));
+        return callee.cpp_func(args);
+    }
+
+    if (callee.type != Type::Func)
+        throw runtime_error("not a function");
+
+    std::vector<Value> args;
+    for (size_t i = 1; i < n->children.size(); i++)
         args.push_back(eval(n->children[i].get()));
-      return callee.cpp_func(args);
-    }
 
-    if(callee.type != Type::Func)
-        throw runtime_error("not a function: " + calleeNode->lexeme);
-
-    if(n->children.size()-1 != callee.params.size())
-        throw runtime_error("argument count mismatch for function " + calleeNode->lexeme);
-
-    env.push();
-    for(size_t i=0; i<callee.params.size(); i++){
-        Value arg = eval(n->children[i+1].get());
-        env.define(callee.params[i], arg);
-    }
-
-    Value ret = Value::Nil();
-    try {
-        exec(callee.body);
-    } catch (ReturnException& re) {
-        ret = re.value;
-    }
-    env.pop();
-    return ret;
+    return callFunction(callee, args);
 }
 
 Value Interpreter::eval_ternary(const Node* n){
@@ -384,6 +413,41 @@ Value Interpreter::eval_index(const Node* n){
     }
     
     throw runtime_error("not an array or string");
+}
+
+
+Value Interpreter::eval_struct_init(const Node* n){
+    auto defOpt = env.get(n->lexeme);
+    if(!defOpt || defOpt->type != Type::STRUCT_DEF)
+        throw runtime_error("undefined struct type: " + n->lexeme);
+
+    const auto& field_names = defOpt->struct_def_fields;
+
+    std::unordered_map<std::string, Value> fields;
+    for (auto &fn : field_names) fields[fn] = Value::Nil();
+
+    if (n->children.size() > field_names.size())
+        throw runtime_error("too many initializers for struct " + n->lexeme);
+
+    for (size_t i = 0; i < n->children.size(); ++i) {
+        Value val = eval(n->children[i].get());
+        fields[field_names[i]] = val;
+    }
+
+    return Value::Struct(fields);
+}
+
+Value Interpreter::eval_struct_index(const Node* n){
+    // children[0]: struct expression; children[1]: identifier node (field)
+    Value base = eval(n->children[0].get());
+    if (base.type != Type::Struct)
+        throw runtime_error("not a struct value");
+
+    const std::string field_name = n->children[1]->lexeme;
+    auto it = base.fields.find(field_name);
+    if (it == base.fields.end())
+        throw runtime_error("struct field not found: " + field_name);
+    return it->second;
 }
 
 Value Interpreter::coerceInt(const Value& v){

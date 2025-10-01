@@ -24,6 +24,7 @@ struct Interpreter {
   void exec_for_loop(const Node* n);
   void exec_fn(const Node* n);
   void exec_return(const Node* n);
+  void exec_struct(const Node* n);
   
   Value eval(const Node* n);
   Value eval_id(const Node* n);
@@ -34,6 +35,8 @@ struct Interpreter {
   Value eval_ternary(const Node* n);
   Value eval_array(const Node* n);
   Value eval_index(const Node* n);
+  Value eval_struct_init(const Node* n);
+  Value eval_struct_index(const Node* n);
   
   static Value coerceInt(const Value& v);
   Value plus(const Value& a, const Value& b);

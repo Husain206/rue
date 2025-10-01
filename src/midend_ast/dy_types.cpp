@@ -48,6 +48,19 @@ Value Value::Array(vector<Value> elems){
     return x;
 }
 
+Value Value::Struct(unordered_map<string, Value> f) {
+    Value x;
+    x.type = Type::Struct;
+    x.fields = std::move(f);
+    return x;
+}
+
+Value Value::StructDef(const std::vector<std::string>& field_names) {
+    Value v; v.type = Type::STRUCT_DEF;
+    v.struct_def_fields = field_names;
+    return v;
+}
+
 string Value::toString() const {
   switch (type) {
     case Type::Int: return std::to_string(i);
@@ -56,7 +69,29 @@ string Value::toString() const {
     case Type::Nil: return "nil";
     case Type::Func: return "<fn>";
     case Type::NativeFunc: return "<native fn>";
-    case Type::Array: return "<array>";
+    case Type::Array: {
+        string s{"["};
+        bool first{true};
+        for(auto& n : array){
+          if(!first) s += ", ";
+          s += n.toString();
+          first = false;
+        }
+        s += "]";
+        return s;
+      }
+    case Type::Struct: {
+      string s = "{";
+      bool first = true;
+      for(auto& [k, v] : fields) {
+          if(!first) s += ", ";
+          s += k + ": " + v.toString();
+          first = false;
+      }
+      s += "}";
+      return s;
+    }
+    case Type::STRUCT_DEF: return "<struct_def>";
   }
   return "nil";
 }
