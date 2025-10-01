@@ -22,6 +22,8 @@ typedef enum {
   NALL,
   CONTINUE,
   BREAK,
+  STRUCT,
+  ENUM,
 
   // IDent
   IDENT,

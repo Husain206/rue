@@ -169,7 +169,9 @@ Token Lexer::setKeyword(str iden) {
     {"return", RETURN},
     {"null", NALL},
     {"continue", CONTINUE},
-    {"break", BREAK}
+    {"break", BREAK},
+    {"struct", STRUCT},
+    {"enum", ENUM},
   };
 
   auto it = keywords.find(iden);
@@ -195,7 +197,7 @@ Token Lexer::ID() {
 
 Token Lexer::Number() {
   str num;
-  while (std::isdigit(peek()) || peek() == '.') {
+  while (std::isdigit(peek())) {
     num += next();
   }
   return {NUMLIT, num, line, col};
@@ -215,7 +217,7 @@ std::vector<Token> Lexer::tokenize(const str &source) {
     isWhiteSpace();
     if (std::isalpha(peek()) || peek() == '_') {
       tokens.push_back(ID());
-    } else if (isdigit(peek()) || peek() == '.') {
+    } else if (isdigit(peek())) {
       tokens.push_back(Number());
     } else {
        Token t = symbolToken();
