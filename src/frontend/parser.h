@@ -38,6 +38,8 @@ unique_ptr<Node> parse_break();
 unique_ptr<Node> parse_continue();
 unique_ptr<Node> parse_return();
 unique_ptr<Node> parse_fn();
+unique_ptr<Node> parse_struct();
+// unique_ptr<Node> parse_enum();
 
 
 // pratt parser
@@ -48,7 +50,7 @@ unique_ptr<Node> led(const Token& t, unique_ptr<Node> left);
 
 // helpers
 Token peek();
-// Token peekNext();
+Token peekNext();
 // Token peekPre();
 Token next();
 

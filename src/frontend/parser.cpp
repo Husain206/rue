@@ -91,6 +91,8 @@ prec get_prec(TokenType type) {
   case LPRN:
   case LB:
     return CALL;
+  case DOT:
+    return POSTFIX;
   default:
     return NONE;
   }
@@ -129,6 +131,10 @@ unique_ptr<Node> Parser::parse_stmt() {
     return parse_return();
   } else if(check(INPUT)){
     return parse_input();
+  } else if(check(STRUCT)){
+    return parse_struct();
+  // } else if(check(ENUM)){
+    // return parse_enum();
   } else {
 
   auto expr = parseExpr();
@@ -364,6 +370,28 @@ unique_ptr<Node> Parser::parse_return() {
   return node;
 }
 
+unique_ptr<Node> Parser::parse_struct(){
+  next();
+  Token name = next();
+  if (name.type != IDENT) throw std::runtime_error("Expected struct name");
+  auto node = std::make_unique<Node>(n_struct);
+  node->lexeme = name.lexeme; 
+
+  consume(LCB, "expected '{' to start struct body");
+
+    while(!check(RCB) && !isAtEnd()) {
+      Token field = next();
+        if(field.type != IDENT) throw std::runtime_error("Expected field name in struct");
+      auto fnode = make_unique<Node>(n_id);
+      fnode->lexeme = field.lexeme;
+      node->children.push_back(std::move(fnode));
+      match(COMMA);
+    } 
+
+  consume(RCB, "expected '}' at the end of the struct");
+  consume(SEMIC, "expected ';' at the end of the struct");
+  return node;
+}
 
 unique_ptr<Node> Parser::parseExpr(int rbp) {
   Token t = next();
@@ -385,6 +413,21 @@ unique_ptr<Node> Parser::nud(const Token &t) {
     return node;
   }
   case IDENT: {
+    if(check(LCB)){
+      auto node = make_unique<Node>(n_struct_init);
+      node->lexeme = t.lexeme;
+
+      consume(LCB, "expected '{' in struct literal");
+      if(!check(RCB)){
+        do {
+        auto val = parseExpr();
+        node->children.push_back(std::move(val));
+        }while (match(COMMA));
+      }
+      consume(RCB, "expected '}' after struct literal");
+      return node;
+    }
+    
     auto node = make_unique<Node>(n_id);
     node->lexeme = t.lexeme;
     return node;
@@ -518,6 +561,20 @@ unique_ptr<Node> Parser::led(const Token &t, unique_ptr<Node> left) {
        consume(RB, "expected ']'");
        return n;
      }
+
+    case DOT: {
+      auto n = make_unique<Node>(n_struct_field);
+      n->children.push_back(std::move(left));
+
+      Token field = next();
+      if (field.type != IDENT) {
+        throw std::runtime_error("Expected field name after '.'");
+      }
+      auto f = make_unique<Node>(n_id);
+      f->lexeme = field.lexeme;
+      n->children.push_back(std::move(f));
+      return n;
+}
  
    default:
      std::cerr << "Unhandled infix operator: " << t.lexeme << "\n";
