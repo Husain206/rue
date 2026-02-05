@@ -165,7 +165,7 @@ unique_ptr<Node> Parser::parse_set() {
      auto node = make_unique<Node>(n_set);
      auto ident = make_unique<Node>(n_id);
      ident->lexeme = name.lexeme;
-     ident->intern_lexeme = INTERN(ident->lexeme); 
+     ident->interner = INTERN(ident->lexeme); 
      node->children.push_back(std::move(ident));
 
   
@@ -209,7 +209,7 @@ unique_ptr<Node> Parser::parse_input(){
     auto node = make_unique<Node>(n_input);
     auto ident = make_unique<Node>(n_id);
     ident->lexeme = name.lexeme;
-    ident->intern_lexeme = INTERN(ident->lexeme);
+    ident->interner = INTERN(ident->lexeme);
     node->children.push_back(std::move(ident));
 
     consume(SEMIC, "Expected ';' at the end of print\n");
@@ -348,7 +348,7 @@ std::unique_ptr<Node> Parser::parse_fn() {
 
   auto node = std::make_unique<Node>(n_fn_dec);
   node->lexeme = name.lexeme;
-  node->intern_lexeme = INTERN(node->lexeme);
+  node->interner = INTERN(node->lexeme);
 
   consume(LPRN, "Expected '(' after fn name");
   
@@ -358,7 +358,7 @@ std::unique_ptr<Node> Parser::parse_fn() {
       if (param.type == IDENT) {
       auto pnode = std::make_unique<Node>(n_id);
       pnode->lexeme = param.lexeme;
-      pnode->intern_lexeme = INTERN(pnode->lexeme);
+      pnode->interner = INTERN(pnode->lexeme);
       node->children.push_back(std::move(pnode));
       } else {
           throw std::runtime_error("Expected parameter name");
@@ -398,7 +398,7 @@ unique_ptr<Node> Parser::parse_struct(){
   if (name.type != IDENT) throw std::runtime_error("Expected struct name");
   auto node = std::make_unique<Node>(n_struct);
   node->lexeme = name.lexeme; 
-  node->intern_lexeme = INTERN(node->lexeme);
+  node->interner = INTERN(node->lexeme);
   
   consume(LCB, "expected '{' to start struct body");
 
@@ -407,7 +407,7 @@ unique_ptr<Node> Parser::parse_struct(){
       if(field.type == IDENT){
       auto fnode = make_unique<Node>(n_id);
       fnode->lexeme = field.lexeme;
-      fnode->intern_lexeme = INTERN(fnode->lexeme);
+      fnode->interner = INTERN(fnode->lexeme);
       node->children.push_back(std::move(fnode));
       match(COMMA);
       }
@@ -425,7 +425,7 @@ unique_ptr<Node> Parser::parse_enum(){
   
   auto node = std::make_unique<Node>(n_enum);
   node->lexeme = name.lexeme;
-  node->intern_lexeme = INTERN(node->lexeme);
+  node->interner = INTERN(node->lexeme);
 
   consume(LCB, "expected '{' to start enum body");
   while(!check(RCB) && !isAtEnd()){
@@ -433,7 +433,7 @@ unique_ptr<Node> Parser::parse_enum(){
      if (variant.type != IDENT) throw std::runtime_error("Expected enum name");
      auto vnode = make_unique<Node>(n_id);
      vnode->lexeme = variant.lexeme;
-     vnode->intern_lexeme = INTERN(vnode->lexeme);
+     vnode->interner = INTERN(vnode->lexeme);
      node->children.push_back(std::move(vnode));
      match(COMMA);
   }
@@ -474,7 +474,7 @@ unique_ptr<Node> Parser::parse_extern() {
 
   auto node = std::make_unique<Node>(n_extern);
   node->lexeme = name.lexeme; 
-  node->intern_lexeme = INTERN(node->lexeme);
+  node->interner = INTERN(node->lexeme);
   
   // children: [maybe lib, maybe sym, sig] as strings
   auto s1 = std::make_unique<Node>(n_str); s1->lexeme = a; node->children.push_back(std::move(s1));
@@ -521,7 +521,7 @@ unique_ptr<Node> Parser::nud(const Token &t) {
     if(check(LCB)){
       auto node = make_unique<Node>(n_struct_init);
       node->lexeme = t.lexeme;
-      node->intern_lexeme = INTERN(node->lexeme);
+      node->interner = INTERN(node->lexeme);
 
       consume(LCB, "expected '{' in struct literal");
       if(!check(RCB)){
@@ -536,7 +536,7 @@ unique_ptr<Node> Parser::nud(const Token &t) {
     
     auto node = make_unique<Node>(n_id);
     node->lexeme = t.lexeme;
-    node->intern_lexeme = INTERN(node->lexeme);
+    node->interner = INTERN(node->lexeme);
     return node;
   }
   case NUMLIT: {
@@ -679,7 +679,7 @@ unique_ptr<Node> Parser::led(const Token &t, unique_ptr<Node> left) {
       }
       auto f = make_unique<Node>(n_id);
       f->lexeme = field.lexeme;
-      f->intern_lexeme = INTERN(f->lexeme);
+      f->interner = INTERN(f->lexeme);
       n->children.push_back(std::move(f));
       return n;
 }
