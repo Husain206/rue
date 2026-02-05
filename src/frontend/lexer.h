@@ -24,6 +24,8 @@ typedef enum {
   BREAK,
   STRUCT,
   ENUM,
+  EXTERN,
+  IMPORT,
 
   // IDent
   IDENT,

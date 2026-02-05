@@ -72,16 +72,16 @@ void Lexer::isWhiteSpace() {
      case ')': return {RPRN, ")", line, a};
      case '[': return {LB, "[", line, a};
      case ']': return {RB, "]", line, a};
-     case '=': if(match('=')) return {EQEQ, "==", line, a}; else return {};
+     case '=': if(match('=')) return {EQEQ, "==", line, a}; else return {EQ, "=", line, a};
      case '>': if(match('=')) return {GQ, ">=", line, a}; else if(match('>')) return {BITWISE_RIGHT_SHIFT, ">>", line, a};  else return {GRT, ">", line, a};
      case '<': if(match('=')) return {LQ, "<=", line, a}; else if(match('<')) return {BITWISE_LEFT_SHIFT, "<<", line, a};  else return {LST, "<", line, a};
      case '|': if(match('|')) return {OR, "||", line, a};   else return {BITWISE_OR, "|", line, a};
      case '^': return {BITWISE_XOR, "^", line, a};
      case '~': return {BITWISE_NOT, "~", line, a};
      case '&': if(match('&')) return {AND, "&&", line, a};  else return {ADDR, "&", line, a};
-     case '!': if(match('=')) return {NOTEQ, "==", line, a}; else return {NOT, "!", line, a};
+     case '!': if(match('=')) return {NOTEQ, "!=", line, a}; else return {NOT, "!", line, a};
      case '%': if(match('=')) return {MODEQ, "%=", line, a}; else return {MOD, "%", line, a};
-     case ':': if(match('=')) return {EQ, ":=", line, a}; else return {COLON, ":", line, a};
+     case ':': /*if(match('=')) return {EQ, ":=", line, a}; else*/ return {COLON, ":", line, a};
      case '?': return {QUES, "?", line, a};
      case '"': return toString();
      case '\'': return toAscii();
@@ -172,6 +172,8 @@ Token Lexer::setKeyword(str iden) {
     {"break", BREAK},
     {"struct", STRUCT},
     {"enum", ENUM},
+    {"extern", EXTERN},
+    {"import", IMPORT},
   };
 
   auto it = keywords.find(iden);
@@ -197,9 +199,19 @@ Token Lexer::ID() {
 
 Token Lexer::Number() {
   str num;
-  while (std::isdigit(peek())) {
-    num += next();
+  bool seenDot = false;
+  while (true) {
+    if (std::isdigit(peek())) {
+      num += next();
+    } else if (!seenDot && peek() == '.') {
+      // allow a single dot in the number, e.g. 1.23
+      seenDot = true;
+      num += next();
+    } else {
+      break;
+    }
   }
+
   return {NUMLIT, num, line, col};
 }
 
