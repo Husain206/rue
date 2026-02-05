@@ -2,6 +2,7 @@
 #include <ostream>
 #include <vector>
 #include "sym_table.h"
+#include "../interner/interner.h"
 
 
 struct ReturnException {
@@ -14,7 +15,16 @@ struct Interpreter {
   void run(const Node* root, const std::vector<std::string>& args = {});
 
   Env env;
+  interner_id id_lookup{};
+
+  std::string module_dir = ".";
+  std::vector<std::unique_ptr<Node>> modules;  
+  std::unordered_map<std::string,bool> imported;
+
+  Value* resolve_lvalue(const Node* n);
+  
   void exec(const Node* n);
+  void exec_import(const Node* n);
   void exec_block(const Node* block, bool declareOnly=false);
   void exec_set(const Node* n);
   void exec_print(const Node* n);
@@ -25,8 +35,12 @@ struct Interpreter {
   void exec_fn(const Node* n);
   void exec_return(const Node* n);
   void exec_struct(const Node* n);
+  void exec_enum(const Node* n);
+  void exec_extern(const Node* n);
+
   
   Value eval(const Node* n);
+  Value eval_num(const Node* n);
   Value eval_id(const Node* n);
   Value eval_assign(const Node* n);
   Value eval_binary(const Node* n);
@@ -39,6 +53,7 @@ struct Interpreter {
   Value eval_struct_index(const Node* n);
   
   static Value coerceInt(const Value& v);
+  static Value coerceFloat(const Value& v);
   Value plus(const Value& a, const Value& b);
   bool equals(const Value& a, const Value& b);
 };
