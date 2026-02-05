@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../frontend/lexer.h"
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -34,7 +35,10 @@ typedef enum {
       n_struct,
       n_struct_init,
       n_struct_field,
-      // n_enum,
+      n_enum,
+      n_method,
+      n_extern,
+      n_import,
 } NodeType;
 
 
@@ -42,6 +46,7 @@ struct Node {
    
    NodeType type;
    string lexeme;
+   uint32_t interner = UINT32_MAX;
    TokenType op = EoF;
 
    vector<unique_ptr<Node>> children;

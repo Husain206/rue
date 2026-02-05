@@ -108,8 +108,25 @@ void printAST(const Node *node, int indent){
       std::cout << "struct feild: " << node->lexeme << "\n";
       for (auto &c : node->children) printAST(c.get(), indent + 1);
       break;
+        case n_method:
+      std::cout << "method(" << node->lexeme << ")\n";
+      for (auto &c : node->children) printAST(c.get(), indent + 1);
+      break;
 
+        case n_enum:
+      std::cout << "enum(" << node->lexeme << ")\n";
+      for (auto &c : node->children) printAST(c.get(), indent + 1);
+      break;
 
+        case n_extern:
+      std::cout << "extern(" << node->lexeme << ")\n";
+      for(auto &c : node->children) printAST(c.get(), indent + 1);
+      break;
+
+        case n_import:
+      std::cout << "import(" << node->lexeme << ")\n";
+      for(auto& c : node->children) printAST(c.get(), indent + 1);
+      break;          
 
     case n_ternary:
       cout << "ternary\n";
