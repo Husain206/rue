@@ -5,7 +5,9 @@
 #include <memory>
 #include <vector>
 #include "ast.h"
+#include "../interner/interner.h"
 
+#define INTERN(s) ids->intern(s)
 
 enum prec {
   NONE,
@@ -25,6 +27,8 @@ struct Parser {
 std::vector<Token> tokens;
 usize current = 0;
 
+interner_id* ids{};
+
 // recursive decent parser
 unique_ptr<Node> parse();
 unique_ptr<Node> parse_stmt();
@@ -39,7 +43,9 @@ unique_ptr<Node> parse_continue();
 unique_ptr<Node> parse_return();
 unique_ptr<Node> parse_fn();
 unique_ptr<Node> parse_struct();
-// unique_ptr<Node> parse_enum();
+unique_ptr<Node> parse_enum();
+unique_ptr<Node> parse_extern();
+unique_ptr<Node> parse_import();
 
 
 // pratt parser
@@ -58,9 +64,4 @@ bool isAtEnd();
 bool check(TokenType type);
 bool match(TokenType type);
 void consume(const TokenType& t, str msg);
-
-// check parser
-    int indent = 0;
-    void printWithIndent(const str& s);
-
 };

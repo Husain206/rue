@@ -133,10 +133,14 @@ unique_ptr<Node> Parser::parse_stmt() {
     return parse_input();
   } else if(check(STRUCT)){
     return parse_struct();
-  // } else if(check(ENUM)){
-    // return parse_enum();
+  } else if(check(ENUM)){
+   return parse_enum();
+  } else if(check(EXTERN)){
+    return parse_extern();
+  } else if (check(IMPORT)){
+     return parse_import();
   } else {
-
+ 
   auto expr = parseExpr();
   if (expr) {
     consume(SEMIC, "Expected ';' after expression or unknown statement " + to_string(peek().line) + ":"
@@ -161,6 +165,7 @@ unique_ptr<Node> Parser::parse_set() {
      auto node = make_unique<Node>(n_set);
      auto ident = make_unique<Node>(n_id);
      ident->lexeme = name.lexeme;
+     ident->intern_lexeme = INTERN(ident->lexeme); 
      node->children.push_back(std::move(ident));
 
   
@@ -171,7 +176,7 @@ unique_ptr<Node> Parser::parse_set() {
      node->children.push_back(std::move(value));
      consume(SEMIC, "expected ';' at the end of set");
   } else 
-     consume(SEMIC, "expected ':=' in set");
+     consume(SEMIC, "expected '=' in set");
   
     return node;
 }
@@ -180,12 +185,14 @@ unique_ptr<Node> Parser::parse_set() {
 
 unique_ptr<Node> Parser::parse_print() {
   next();
-
-  auto value = parseExpr();
-  consume(SEMIC, "Expected ';' at the end of print\n");
-
   auto node = make_unique<Node>(n_print);
+
+  while(!check(SEMIC) && !isAtEnd()){
+  auto value = parseExpr();
   node->children.push_back(std::move(value));
+  match(COMMA);
+  }
+  consume(SEMIC, "Expected ';' at the end of print\n");
 
   return node;
 }
@@ -202,6 +209,7 @@ unique_ptr<Node> Parser::parse_input(){
     auto node = make_unique<Node>(n_input);
     auto ident = make_unique<Node>(n_id);
     ident->lexeme = name.lexeme;
+    ident->intern_lexeme = INTERN(ident->lexeme);
     node->children.push_back(std::move(ident));
 
     consume(SEMIC, "Expected ';' at the end of print\n");
@@ -253,8 +261,13 @@ unique_ptr<Node> Parser::parse_if() {
   node->children.push_back(std::move(cond));
   node->children.push_back(std::move(body));
 
-  if (match(ELSE)) {
-    consume(LCB, "expected '{' after ')' in if\n");
+  if(match(ELSE)){
+    if (match(IF)) {
+      auto elifNode = parse_if();      
+      node->children.push_back(std::move(elifNode));
+    } else {
+  
+    consume(LCB, "expected '{' after ')' in else\n");
     auto elseBody = make_unique<Node>(n_else);
 
     while (!check(RCB) && !isAtEnd()) {
@@ -267,6 +280,7 @@ unique_ptr<Node> Parser::parse_if() {
 
     consume(RCB, "expected '}' at the end of if\n");
     node->children.push_back(std::move(elseBody));
+    }
   }
   return node;
 }
@@ -279,10 +293,15 @@ unique_ptr<Node> Parser::parse_for_loop(){
 
     unique_ptr<Node> init = nullptr;
     if(check(SET)) init = parse_set();
-
+    else if(!check(SEMIC)){
+      auto expr = parseExpr();
+      consume(SEMIC,"Expected ';' after condition after init in for loop\n");
+      auto stmt = make_unique<Node>(n_expr_stmt);
+      stmt->children.push_back(std::move(expr));
+      init = std::move(stmt);
+    } 
     else {
-      if(check(SEMIC)) next();
-      else std::cerr << "Expected 'set' or ';' in for-init\n";
+      next();
     }
 
     auto cond = parseExpr();
@@ -323,29 +342,32 @@ unique_ptr<Node> Parser::parse_continue(){
 }
 
 std::unique_ptr<Node> Parser::parse_fn() {
-  next(); // consume 'fn'
+  next(); 
   Token name = next();
   if (name.type != IDENT) throw std::runtime_error("Expected function name");
 
   auto node = std::make_unique<Node>(n_fn_dec);
-  node->lexeme = name.lexeme; // function name
+  node->lexeme = name.lexeme;
+  node->intern_lexeme = INTERN(node->lexeme);
 
   consume(LPRN, "Expected '(' after fn name");
-
-  // Parse parameters
+  
   if (!check(RPRN)) {
     do {
       Token param = next();
-      if (param.type != IDENT)
-        throw std::runtime_error("Expected parameter name");
+      if (param.type == IDENT) {
       auto pnode = std::make_unique<Node>(n_id);
       pnode->lexeme = param.lexeme;
-      node->children.push_back(std::move(pnode)); // store parameter as child
+      pnode->intern_lexeme = INTERN(pnode->lexeme);
+      node->children.push_back(std::move(pnode));
+      } else {
+          throw std::runtime_error("Expected parameter name");
+      }
     } while (match(COMMA));
   }
   consume(RPRN, "Expected ')' after params");
 
-  // Parse body (a block)
+  
   consume(LCB, "expected '{' to start function body");
   auto body = std::make_unique<Node>(n_block);
   while (!check(RCB) && !isAtEnd()) {
@@ -376,22 +398,105 @@ unique_ptr<Node> Parser::parse_struct(){
   if (name.type != IDENT) throw std::runtime_error("Expected struct name");
   auto node = std::make_unique<Node>(n_struct);
   node->lexeme = name.lexeme; 
-
+  node->intern_lexeme = INTERN(node->lexeme);
+  
   consume(LCB, "expected '{' to start struct body");
 
     while(!check(RCB) && !isAtEnd()) {
       Token field = next();
-        if(field.type != IDENT) throw std::runtime_error("Expected field name in struct");
+      if(field.type == IDENT){
       auto fnode = make_unique<Node>(n_id);
       fnode->lexeme = field.lexeme;
+      fnode->intern_lexeme = INTERN(fnode->lexeme);
       node->children.push_back(std::move(fnode));
       match(COMMA);
+      }
     } 
 
   consume(RCB, "expected '}' at the end of the struct");
-  consume(SEMIC, "expected ';' at the end of the struct");
   return node;
 }
+
+unique_ptr<Node> Parser::parse_enum(){
+  next();
+  
+  Token name = next();
+  if (name.type != IDENT) throw runtime_error("Expected enum name");
+  
+  auto node = std::make_unique<Node>(n_enum);
+  node->lexeme = name.lexeme;
+  node->intern_lexeme = INTERN(node->lexeme);
+
+  consume(LCB, "expected '{' to start enum body");
+  while(!check(RCB) && !isAtEnd()){
+    Token variant = next();
+     if (variant.type != IDENT) throw std::runtime_error("Expected enum name");
+     auto vnode = make_unique<Node>(n_id);
+     vnode->lexeme = variant.lexeme;
+     vnode->intern_lexeme = INTERN(vnode->lexeme);
+     node->children.push_back(std::move(vnode));
+     match(COMMA);
+  }
+  
+  consume(RCB, "expected '}' at the end of the enum");
+  return node;
+}
+
+
+unique_ptr<Node> Parser::parse_extern() {
+  next(); 
+  Token name = next();
+  if (name.type != IDENT) throw std::runtime_error("extern: expected identifier");
+
+  consume(LPRN, "extern: expected '('");
+
+  // First argument must be string; but if we have 3 strings, it's (lib,sym,sig)
+  Token first = next();
+  if (first.type != STRLIT) throw std::runtime_error("extern: expected string");
+
+  std::string a = first.lexeme, b, c;
+  int count = 1;
+  if (match(COMMA)) {
+    Token second = next();
+    if (second.type != STRLIT) throw std::runtime_error("extern: expected string");
+    b = second.lexeme;
+    count = 2;
+    if (match(COMMA)) {
+      Token third = next();
+      if (third.type != STRLIT) throw std::runtime_error("extern: expected string");
+      c = third.lexeme;
+      count = 3;
+    }
+  }
+
+  consume(RPRN, "extern: expected ')'");
+  consume(SEMIC, "extern: expected ';'");
+
+  auto node = std::make_unique<Node>(n_extern);
+  node->lexeme = name.lexeme; 
+  node->intern_lexeme = INTERN(node->lexeme);
+  
+  // children: [maybe lib, maybe sym, sig] as strings
+  auto s1 = std::make_unique<Node>(n_str); s1->lexeme = a; node->children.push_back(std::move(s1));
+  if (count >= 2) { auto s2 = std::make_unique<Node>(n_str); s2->lexeme = b; node->children.push_back(std::move(s2)); }
+  if (count == 3) { auto s3 = std::make_unique<Node>(n_str); s3->lexeme = c; node->children.push_back(std::move(s3)); }
+  return node;
+}
+
+
+unique_ptr<Node> Parser::parse_import() {
+  next(); 
+  Token path = next();
+  if (path.type != STRLIT)
+    throw std::runtime_error("import expects a string literal path");
+  consume(SEMIC, "Expected ';' after import");
+
+  auto node = std::make_unique<Node>(n_import);
+  node->lexeme = path.lexeme; 
+  return node;
+}
+
+
 
 unique_ptr<Node> Parser::parseExpr(int rbp) {
   Token t = next();
@@ -416,6 +521,7 @@ unique_ptr<Node> Parser::nud(const Token &t) {
     if(check(LCB)){
       auto node = make_unique<Node>(n_struct_init);
       node->lexeme = t.lexeme;
+      node->intern_lexeme = INTERN(node->lexeme);
 
       consume(LCB, "expected '{' in struct literal");
       if(!check(RCB)){
@@ -430,6 +536,7 @@ unique_ptr<Node> Parser::nud(const Token &t) {
     
     auto node = make_unique<Node>(n_id);
     node->lexeme = t.lexeme;
+    node->intern_lexeme = INTERN(node->lexeme);
     return node;
   }
   case NUMLIT: {
@@ -441,7 +548,7 @@ unique_ptr<Node> Parser::nud(const Token &t) {
     unique_ptr<Node> inner = parseExpr();
     if (!match(RPRN))
       std::cerr << "expected ')' at: " << t.line << ":" << t.col
-                << std::endl; // maybe consume
+                << std::endl; 
     return inner;
   }
 
@@ -572,6 +679,7 @@ unique_ptr<Node> Parser::led(const Token &t, unique_ptr<Node> left) {
       }
       auto f = make_unique<Node>(n_id);
       f->lexeme = field.lexeme;
+      f->intern_lexeme = INTERN(f->lexeme);
       n->children.push_back(std::move(f));
       return n;
 }
