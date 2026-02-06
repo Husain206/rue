@@ -1,0 +1,15 @@
+
+
+fn main(args){
+  set str = "010011110110111001100101";
+  // set str = "111";
+  set len = len(str);
+
+  set out;
+  for(set i = 0; i < len; i++){
+    out += num(str[i]) * bow(2, len-i-1);
+  }
+
+  print "\n", out;
+}
+

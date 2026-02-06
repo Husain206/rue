@@ -1,0 +1,198 @@
+// extern strcmp("i(s,s)");
+extern strncmp("i(s,s,i)");
+import "file.rue";
+
+enum INS {
+    inc,
+    dec,
+    add,
+    sub,
+    out,
+    in,
+    je,
+    jne
+}
+
+struct Token {
+    type,
+    value,
+    jmps
+}
+
+fn lexer(src){ // an array
+    set tokens = array(0, Token{});
+    for(set i = 0; i < len(src); i++){
+    if (strncmp(src[i], "<", 1) == 0 || strncmp(src[i], ">", 1) == 0 || strncmp(src[i], ".", 1) == 0 ||
+        strncmp(src[i], "-", 1) == 0 || strncmp(src[i], "+", 1) == 0) {
+        set count = 1;
+        ala(i + 1 < len(src) && strncmp(src[i+1], src[i], 1) == 0){
+            i++;
+            count++;
+        }
+            if(strncmp(src[i], "+", 1) == 0){
+                tokens = bush(tokens, Token{INS.add, count});
+            } else if (strncmp(src[i], "-", 1) == 0){
+                tokens = bush(tokens, Token{INS.sub, count});
+            } else if(strncmp(src[i], ">", 1) == 0){
+                tokens = bush(tokens, Token{INS.inc, count});
+            } else if(strncmp(src[i], "<", 1) == 0){
+                tokens = bush(tokens, Token{INS.dec, count});
+            } else if(strncmp(src[i], ".", 1) == 0){
+                tokens = bush(tokens, Token{INS.out, count});
+            } else if(strncmp(src[i], ",", 1) == 0){
+                tokens = bush(tokens, Token{INS.in, count});
+            }
+        }
+        if(strncmp(src[i], "[", 1) == 0){
+            tokens = bush(tokens, Token{INS.je, 1});
+        } else if(strncmp(src[i], "]", 1) == 0){
+            tokens = bush(tokens, Token{INS.jne, 1});
+        }
+    }
+    return tokens;
+}
+
+//  helper: mutate token field via local id, then write back
+fn setTokJmp(tokens, idx, j){
+    set t = tokens[idx];   // copy element out
+    t.jmps = j;            // allowed: struct field assignment on identifier
+    tokens[idx] = t;       // allowed: array element assignment
+    return tokens;  
+}
+
+fn checkJumps(tokens){
+    set stack = [];
+
+    for(set i = 0; i < len(tokens); i++){
+        set tok = tokens[i];
+        if(tok.type == INS.je){
+            stack = bush(stack, i);
+        } else if(tok.type == INS.jne){
+            if(len(stack) == 0){
+                brint("unmatched ']' at: ", i);
+                exit(69);
+            }
+        set openbra = stack[len(stack)-1];
+        stack = bob(stack);
+
+        // instead of: tokens[openbra].jmps = i; tokens[i].jmps := openbra;
+        tokens = setTokJmp(tokens, openbra, i);
+        tokens = setTokJmp(tokens, i, openbra);
+        }
+    }
+    if(len(stack) != 0){
+        brint("unmatched '['");
+    }
+    return tokens;
+}
+
+fn toBf(a){
+    for(set i = 0; i < len(a); i++){
+        if(a[i].type == inc){
+            brint(">", a[i].value, a[i].jmps);
+        } else if(a[i].type == INS.dec){
+            brint("<", a[i].value, a[i].jmps);
+        } else if(a[i].type == INS.add){
+            brint("+", a[i].value, a[i].jmps);
+        } else if(a[i].type == INS.sub){
+            brint("-", a[i].value, a[i].jmps);
+        } else if(a[i].type == INS.out){
+            brint(".", a[i].value, a[i].jmps);
+        } else if(a[i].type == INS.in){
+            brint(",", a[i].value, a[i].jmps);
+        } else if(a[i].type == INS.je){
+            brint("[", a[i].value, a[i].jmps);
+        } else if(a[i].type == INS.jne){
+            brint("]", a[i].value, a[i].jmps);
+        }
+    }
+}
+
+// fn interpreter(tokens){
+//     set mem = array(100, 0);
+//     set ptr = 0;
+
+//     for(set i = 0; i < len(tokens); i++){
+//         set tok = tokens[i];
+//         if(tok.type == inc){
+//             ptr += tokens[i].value; 
+//         } else if(tok.type == INS.dec){
+//             ptr -= tokens[i].value;
+//         } else if(tok.type == INS.add){
+//             mem[ptr] += tokens[i].value;
+//         } else if(tok.type == sub){
+//             mem[ptr] -= tokens[i].value;
+//         } else if(tok.type == out){
+//             for(set j = 0; j < tokens[i].value; j++){ print chr(mem[ptr]); }
+//         } else if(tok.type == in){
+//             print "later input";
+//         } else if(tok.type == je){
+//             if(mem[ptr] == 0){ i = tokens[i].jmps; }
+//         } else if(tok.type == jne){
+//             if(mem[ptr] != 0){ i = tokens[i].jmps; }
+//         }
+            
+//     }
+//     return mem;
+// }
+
+fn wrap8(x){
+    return ((x % 256) + 256) % 256;
+}
+
+
+fn interpreter(tokens){
+    set mem = array(10000, 0);
+    set ptr = 5000;
+    set ip = 0;            // instruction pointer
+
+    ala(ip < len(tokens)){
+        set tok = tokens[ip];
+
+        if(tok.type == INS.inc){
+            ptr += tok.value;
+
+        } else if(tok.type == INS.dec){
+            ptr -= tok.value;
+
+        } else if(tok.type == INS.add){
+            // mem[ptr] = mem[ptr] + tok.value;
+            mem[ptr] = wrap8(mem[ptr] + tok.value);
+        } else if(tok.type == INS.sub){
+            // mem[ptr] = mem[ptr] - tok.value;
+            mem[ptr] = wrap8(mem[ptr] - tok.value);
+        } else if(tok.type == INS.out){
+            for(set j = 0; j < tok.value; j++){
+                print(chr(mem[ptr]));
+            }
+
+        } else if(tok.type == INS.in){
+            print "later input";
+
+        } else if(tok.type == INS.je){
+            if(mem[ptr] == 0){
+                ip = tok.jmps;   // jump to matching ]
+            }
+
+        } else if(tok.type == INS.jne){
+            if(mem[ptr] != 0){
+                ip = tok.jmps;   // jump back to matching [
+            }
+        }
+
+        ip += 1;   
+        // brint("ip:", ip, "ptr:", ptr, "cell:", mem[ptr], "tok:", tok.type, tok.value);
+    }
+    // return mem;
+}
+
+
+fn main(args){
+
+    // toBf(checkJumps(lexer("++++++++[>++++++++<-]>+.")));
+    set file = readf("hello.txt");
+    interpreter(checkJumps(lexer(file)));
+
+    // interpreter(checkJumps(lexer("++++++++[>++++++++<-]>+.")));
+    return 0;
+}

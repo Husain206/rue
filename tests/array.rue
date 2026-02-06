@@ -1,0 +1,11 @@
+extern printf("i(s,...)");
+
+fn main(){
+
+    set arr = [1, 2, 4];
+    bush(arr, 12);
+    for(set i = 0; i < len(arr); i++){
+        printf("%d\n", arr[i]);
+    }
+    return 0;
+}

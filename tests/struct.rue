@@ -1,16 +1,16 @@
-struct Point { x, y };
+struct Point{ x, y }
 
+fn main() {
+    set p = Point{};
 
-fn main(args) {
-    set p := Point{ 6, 9 };
+    print "\033[34m", p, "\033[0m";
+    p.x = [1, 2, 3];
+    p.x = bush(p.x, 4);
+    p.y = 6;
+    struct Circle { center, radius }
+    set c = Circle{ Point{ 6, 9 }, 5 };
+    print "\033[34m", c, "\033[0m";
 
-    brint("\033[34m", p, "\033[0m");
-    p.x := 9;
-    p.y := 6;
-    brint("\033[34m", p, "\033[0m");
-    struct Circle { center, radius };
-    set c := Circle{ Point{ 6, 9 }, 5 };
-
-    brint("\033[32m", c, "\033[0m");
 }
+
 

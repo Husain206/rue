@@ -1,0 +1,27 @@
+// set f = open("hello.txt", "w");
+// write(f, "Hello from Rue!\n");
+// close(f);
+
+fn readf(f){
+set f2 = open(f, "r");
+set contents = read(f2, 1000);
+close(f2);
+
+return contents;
+}
+
+fn writef(f, t){
+set f2 = open(f, "w");
+set contents = write(f2, t);
+close(f2);
+}
+
+
+
+fn main(args){
+
+// brint(readf("hello.txt"));
+writef("hello.txt", "hello world");
+brint(readf("hello.txt"));
+
+}
